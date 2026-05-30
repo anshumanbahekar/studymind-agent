@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyMind — AI Study Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.19.0/fonts/tabler-icons.min.css"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f5ff;--bg2:#ffffff;--bg3:#f3eeff;--bg4:#ede6ff;
+  --border:rgba(139,92,246,0.13);--border2:rgba(139,92,246,0.26);
+  --p50:#faf5ff;--p100:#f3e8ff;--p200:#e9d5ff;--p300:#d8b4fe;
+  --p400:#c084fc;--p500:#a855f7;--p600:#9333ea;--p700:#7e22ce;--p800:#6b21a8;
+  --text:#1a0533;--text2:#4c1d95;--text3:#7c3aed;--text4:#9ca3af;
+  --green:#059669;--green-bg:#ecfdf5;
+  --amber:#d97706;--amber-bg:#fffbeb;
+  --red:#dc2626;--red-bg:#fef2f2;
+  --teal:#0891b2;--teal-bg:#ecfeff;
+  --font-display:'Instrument Serif',serif;
+  --font-body:'Plus Jakarta Sans',sans-serif;
+  --radius:12px;--radius-lg:18px;--radius-xl:24px;
+  --shadow:0 1px 3px rgba(109,40,217,0.06),0 4px 16px rgba(109,40,217,0.06);
+  --shadow-lg:0 4px 24px rgba(109,40,217,0.1),0 1px 4px rgba(109,40,217,0.05);
+  --shadow-xl:0 12px 48px rgba(109,40,217,0.15),0 2px 8px rgba(109,40,217,0.08);
+}
+html{font-size:15px;background:var(--bg)}
+body{font-family:var(--font-body);color:var(--text);background:var(--bg);min-height:100vh;display:flex;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(167,139,250,0.15) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 90% 10%,rgba(216,180,254,0.12) 0%,transparent 55%),radial-gradient(ellipse 50% 40% at 50% 100%,rgba(139,92,246,0.07) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* Sidebar */
+.sidebar{width:256px;min-width:256px;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;z-index:20;box-shadow:2px 0 20px rgba(109,40,217,0.05)}
+.sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--p500),var(--p800));display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;flex-shrink:0;box-shadow:0 4px 14px rgba(139,92,246,0.4)}
+.logo-text{font-family:var(--font-display);font-size:22px;color:var(--text);letter-spacing:-0.2px;font-weight:600;line-height:1}
+.logo-text span{background:linear-gradient(135deg,var(--p500),var(--p700));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-size:10px;color:var(--text4);margin-top:3px;letter-spacing:1px;text-transform:uppercase;font-weight:500}
+.sidebar-nav{flex:1;padding:18px 14px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-section-label{font-size:9.5px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:1.2px;padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);cursor:pointer;font-size:13.5px;color:#4b5563;border:none;background:none;width:100%;text-align:left;transition:all 0.15s;font-family:var(--font-body);font-weight:400}
+.nav-item i{font-size:17px;opacity:0.6;flex-shrink:0}
+.nav-item:hover{background:var(--p50);color:var(--p700)}
+.nav-item.active{background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(139,92,246,0.07));color:var(--p700);font-weight:500;border:1px solid rgba(168,85,247,0.15)}
+.nav-item.active i{opacity:1}
+.nav-badge{margin-left:auto;background:linear-gradient(135deg,var(--p500),var(--p700));color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border)}
+.user-card{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:var(--radius);background:linear-gradient(135deg,var(--p50),rgba(233,213,255,0.4));border:1px solid var(--border)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--p400),var(--p700));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(139,92,246,0.3)}
+.user-name{font-size:13px;font-weight:600;color:var(--text)}
+.user-plan{font-size:11px;color:var(--p600);margin-top:1px}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;z-index:1}
+.topbar{height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(255,255,255,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);position:sticky;top:0;z-index:15}
+.page-title{font-family:var(--font-display);font-size:24px;color:var(--text);font-weight:500;letter-spacing:-0.3px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-btn{display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--radius);background:#fff;border:1px solid var(--border2);color:var(--p700);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;font-family:var(--font-body);box-shadow:0 1px 4px rgba(109,40,217,0.07)}
+.topbar-btn:hover{background:var(--p50);box-shadow:0 2px 8px rgba(109,40,217,0.12)}
+.topbar-btn i{font-size:15px}
+.topbar-btn.primary{background:linear-gradient(135deg,var(--p500),var(--p700));border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(139,92,246,0.35)}
+.topbar-btn.primary:hover{box-shadow:0 6px 20px rgba(139,92,246,0.45);transform:translateY(-1px)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:500;background:var(--p50);color:var(--p700);border:1px solid rgba(168,85,247,0.2)}
+
+/* Content */
+.content{padding:32px;flex:1;overflow-y:auto}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:30px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 22px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;animation:fadeUp 0.5s ease both}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.stat-card:nth-child(1){animation-delay:0.06s}.stat-card:nth-child(2){animation-delay:0.12s}.stat-card:nth-child(3){animation-delay:0.18s}.stat-card:nth-child(4){animation-delay:0.24s}
+.stat-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:16px}
+.stat-icon.purple{background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(139,92,246,0.08));color:var(--p600)}
+.stat-icon.green{background:rgba(5,150,105,0.1);color:var(--green)}
+.stat-icon.amber{background:rgba(217,119,6,0.1);color:var(--amber)}
+.stat-icon.teal{background:rgba(8,145,178,0.1);color:var(--teal)}
+.stat-value{font-family:var(--font-display);font-size:34px;font-weight:600;color:var(--text);line-height:1;margin-bottom:4px;letter-spacing:-0.5px}
+.stat-label{font-size:12px;color:var(--text4);font-weight:400}
+.stat-delta{font-size:11.5px;font-weight:500;margin-top:12px;display:flex;align-items:center;gap:5px}
+.stat-delta.up{color:var(--green)}.stat-delta.warn{color:var(--amber)}
+
+.two-col{display:grid;grid-template-columns:1fr 380px;gap:20px;margin-bottom:20px}
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);animation:fadeUp 0.5s ease 0.28s both}
+.panel-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(250,245,255,0.8),rgba(255,255,255,0.95))}
+.panel-title{font-size:14px;font-weight:600;color:var(--text)}
+.panel-sub{font-size:11.5px;color:var(--text4);margin-top:2px}
+.panel-action{font-size:12px;color:var(--p600);cursor:pointer;display:flex;align-items:center;gap:4px;background:none;border:none;font-family:var(--font-body);font-weight:500;padding:5px 10px;border-radius:8px;transition:background 0.15s}
+.panel-action:hover{background:var(--p50)}
+.panel-body{padding:20px 24px}
+
+.topic-list{display:flex;flex-direction:column;gap:10px}
+.topic-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:linear-gradient(135deg,var(--bg3),#fff);border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;transition:all 0.15s}
+.topic-item:hover{border-color:var(--border2);background:var(--p50);transform:translateX(2px);box-shadow:0 2px 12px rgba(109,40,217,0.08)}
+.topic-dot{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.topic-info{flex:1;min-width:0}
+.topic-name{font-size:13.5px;font-weight:500;color:var(--text)}
+.topic-meta{font-size:11.5px;color:var(--text4);margin-top:2px}
+.topic-right{text-align:right;flex-shrink:0}
+.mastery-pct{font-size:13px;font-weight:600;font-family:var(--font-display)}
+.mastery-bar{width:72px;height:4px;background:var(--bg4);border-radius:4px;margin-top:6px;overflow:hidden}
+.mastery-fill{height:100%;border-radius:4px}
+
+.due-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(139,92,246,0.07)}
+.due-item:last-child{border-bottom:none}
+.due-rank{width:28px;height:28px;border-radius:8px;background:var(--p50);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--p600);flex-shrink:0;border:1px solid var(--border)}
+.due-text{flex:1;min-width:0}
+.due-concept{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.due-topic-name{font-size:11px;color:var(--text4);margin-top:1px}
+.due-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.due-badge.hard{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,0.15)}
+.due-badge.medium{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(217,119,6,0.15)}
+.due-badge.easy{background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,0.15)}
+
+.weak-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--red-bg);border:1px solid rgba(220,38,38,0.12);border-radius:var(--radius);margin-bottom:8px}
+.weak-item:last-child{margin-bottom:0}
+.weak-concept{flex:1;font-size:13px;color:var(--text)}
+.weak-score{font-size:12px;font-weight:600;color:var(--red)}
+
+.bottom-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+
+/* Agent chat */
+.agent-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;height:460px;box-shadow:var(--shadow)}
+.agent-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;background:linear-gradient(135deg,var(--p50),rgba(255,255,255,0.95))}
+.agent-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--p400),var(--p700));display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(139,92,246,0.3)}
+.agent-name{font-size:13.5px;font-weight:600;color:var(--text)}
+.agent-status{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px;font-weight:500}
+.agent-status::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(5,150,105,0.5)}
+.agent-messages{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,var(--bg3),#fff)}
+.msg{display:flex;flex-direction:column;gap:4px;max-width:88%}
+.msg.agent{align-self:flex-start}.msg.user{align-self:flex-end}
+.msg-bubble{padding:11px 15px;border-radius:16px;font-size:13px;line-height:1.55}
+.msg.agent .msg-bubble{background:#fff;border:1px solid var(--border);color:#374151;border-radius:4px 16px 16px 16px;box-shadow:var(--shadow)}
+.msg.user .msg-bubble{background:linear-gradient(135deg,var(--p500),var(--p700));color:#fff;border-radius:16px 4px 16px 16px;box-shadow:0 4px 14px rgba(139,92,246,0.3)}
+.msg-time{font-size:10px;color:var(--text4);padding:0 4px}
+.typing-dots{display:inline-flex;gap:3px;padding:2px 0}
+.typing-dots span{width:5px;height:5px;border-radius:50%;background:var(--p400);animation:bounce 1.2s ease infinite}
+.typing-dots span:nth-child(2){animation-delay:0.2s}.typing-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.agent-input-row{padding:13px 16px;border-top:1px solid var(--border);display:flex;gap:9px;align-items:center;background:#fff}
+.agent-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 15px;color:var(--text);font-size:13px;font-family:var(--font-body);outline:none;transition:all 0.15s}
+.agent-input:focus{border-color:var(--p400);background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,0.08)}
+.agent-input::placeholder{color:var(--text4)}
+.agent-send{width:38px;height:38px;border-radius:var(--radius);background:linear-gradient(135deg,var(--p500),var(--p700));border:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;cursor:pointer;transition:all 0.15s;flex-shrink:0;box-shadow:0 3px 10px rgba(139,92,246,0.35)}
+.agent-send:hover{transform:scale(1.06);box-shadow:0 4px 16px rgba(139,92,246,0.45)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(88,28,135,0.2);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border:1px solid var(--border2);border-radius:var(--radius-xl);width:580px;max-width:92vw;padding:32px;position:relative;box-shadow:var(--shadow-xl);animation:modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both}
+@keyframes modalIn{from{opacity:0;transform:scale(0.93) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal::before{content:'';position:absolute;inset:0;border-radius:var(--radius-xl);background:linear-gradient(135deg,rgba(250,245,255,0.5),transparent 60%);pointer-events:none}
+.modal-close{position:absolute;top:18px;right:18px;background:var(--bg3);border:1px solid var(--border);color:#6b7280;font-size:16px;cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.modal-close:hover{background:var(--red-bg);color:var(--red)}
+.quiz-topic{font-size:11px;font-weight:700;color:var(--p600);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.quiz-question{font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1.45;margin-bottom:24px;font-weight:500}
+.quiz-answer-input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:13px 16px;color:var(--text);font-size:14px;font-family:var(--font-body);outline:none;resize:none;transition:all 0.15s;min-height:90px}
+.quiz-answer-input:focus{border-color:var(--p400);background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,0.08)}
+.quiz-footer{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
+.quiz-diff{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid}
+.quiz-diff.easy{background:var(--green-bg);color:var(--green);border-color:rgba(5,150,105,0.2)}
+.quiz-diff.medium{background:var(--amber-bg);color:var(--amber);border-color:rgba(217,119,6,0.2)}
+.quiz-diff.hard{background:var(--red-bg);color:var(--red);border-color:rgba(220,38,38,0.2)}
+.quiz-submit{padding:10px 24px;border-radius:var(--radius);background:linear-gradient(135deg,var(--p500),var(--p700));border:none;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);box-shadow:0 4px 14px rgba(139,92,246,0.35);transition:all 0.15s}
+.quiz-submit:hover{box-shadow:0 6px 20px rgba(139,92,246,0.45);transform:translateY(-1px)}
+.quiz-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.quiz-result{margin-top:20px;padding:16px 18px;border-radius:var(--radius);font-size:13px;line-height:1.6;display:none}
+.quiz-result.correct{background:var(--green-bg);border:1px solid rgba(5,150,105,0.2);color:#065f46}
+.quiz-result.wrong{background:var(--amber-bg);border:1px solid rgba(217,119,6,0.2);color:#78350f}
+.quiz-result.open{display:block}
+.result-label{font-weight:700;margin-bottom:5px}
+
+/* Logs */
+.log-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow)}
+.log-body{padding:14px 18px;font-family:'Courier New',monospace;font-size:11px;color:#6b7280;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;background:linear-gradient(180deg,var(--bg3),#fff)}
+.log-entry{padding:3px 0;border-bottom:1px solid rgba(139,92,246,0.04);line-height:1.5}
+.log-entry.mcp{color:var(--p600)}.log-entry.gemini{color:var(--green)}.log-entry.sm2{color:var(--amber)}.log-entry.info{color:#9ca3af}
+
+.prog-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text4);margin-bottom:6px}
+.prog-track{height:7px;background:var(--bg4);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.prog-fill{height:100%;border-radius:8px;transition:width 0.9s ease}
+
+.heatmap{display:flex;flex-wrap:wrap;gap:3px}
+.heat-cell{width:12px;height:12px;border-radius:3px;background:var(--bg4)}
+.heat-cell.l1{background:rgba(168,85,247,0.18)}.heat-cell.l2{background:rgba(168,85,247,0.38)}.heat-cell.l3{background:rgba(168,85,247,0.62)}.heat-cell.l4{background:var(--p500)}
+
+.empty-state{text-align:center;padding:28px 16px;color:var(--text4);font-size:13px}
+.empty-state i{font-size:28px;display:block;margin-bottom:8px;color:var(--bg4)}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#fff;border:1px solid var(--border2);border-radius:var(--radius);padding:13px 18px;font-size:13px;color:var(--text);z-index:200;transform:translateY(80px);opacity:0;transition:all 0.3s ease;max-width:320px;box-shadow:var(--shadow-lg)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--p500)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--p300);border-radius:4px}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg></div>
+      <div>
+        <div class="logo-text">Study<span>Mind</span></div>
+        <div class="logo-sub">AI Study Agent</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Workspace</div>
+    <button class="nav-item active" onclick="showView('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+    <button class="nav-item" onclick="showView('dashboard')"><i class="ti ti-books"></i> My Topics <span class="nav-badge" id="nb-topics">—</span></button>
+    <button class="nav-item" onclick="openQuizModal()"><i class="ti ti-cards"></i> Flashcards</button>
+    <button class="nav-item" onclick="openQuizModal()"><i class="ti ti-writing"></i> Quiz Mode</button>
+    <div class="nav-section-label">Intelligence</div>
+    <button class="nav-item" onclick="showView('dashboard')"><i class="ti ti-chart-dots"></i> Progress Analytics</button>
+    <button class="nav-item" onclick="showView('logs')"><i class="ti ti-terminal"></i> Agent Logs</button>
+    <div class="nav-section-label">Agent</div>
+    <button class="nav-item" onclick="showView('logs')"><i class="ti ti-database"></i> MongoDB Store</button>
+    <button class="nav-item"><i class="ti ti-settings"></i> Settings</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">AB</div>
+      <div>
+        <div class="user-name">Anshuman B.</div>
+        <div class="user-plan" id="streak-label">Loading…</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:16px">
+      <span class="page-title">Dashboard</span>
+      <span class="chip"><i class="ti ti-calendar-check"></i> <span id="today-date"></span></span>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="doLogout()" style="color:#dc2626;border-color:rgba(220,38,38,0.2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</button>
+      <button class="topbar-btn" onclick="refreshAll()"><i class="ti ti-refresh"></i> Refresh</button>
+      <button class="topbar-btn" onclick="location.href='studyplan.html'"><i class="ti ti-map"></i> Study Plan</button>
+      <button class="topbar-btn primary" onclick="openQuizModal()"><i class="ti ti-player-play"></i> Start Session</button>
+    </div>
+  </header>
+
+  <div class="content" id="view-dashboard">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="ti ti-cards"></i></div>
+        <div class="stat-value" id="stat-cards">—</div>
+        <div class="stat-label">Total Flashcards</div>
+        <div class="stat-delta up" id="stat-cards-delta"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Loading</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="ti ti-flame"></i></div>
+        <div class="stat-value" id="stat-streak">—</div>
+        <div class="stat-label">Day Streak</div>
+        <div class="stat-delta up" id="stat-streak-delta"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Loading</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="ti ti-clock-bolt"></i></div>
+        <div class="stat-value" id="stat-due">—</div>
+        <div class="stat-label">Cards Due Today</div>
+        <div class="stat-delta warn" id="stat-due-delta"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Loading</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon teal"><i class="ti ti-chart-line"></i></div>
+        <div class="stat-value" id="stat-mastery">—</div>
+        <div class="stat-label">Overall Mastery</div>
+        <div class="stat-delta up" id="stat-mastery-delta"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Loading</div>
+      </div>
+    </div>
+
+    <!-- Two col -->
+    <div class="two-col">
+      <!-- Topics -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Active Topics</div>
+            <div class="panel-sub">Tracked by Ingestor Agent via MongoDB MCP</div>
+          </div>
+          <button class="panel-action" onclick="promptIngest()"><i class="ti ti-plus"></i> Add topic</button>
+        </div>
+        <div class="panel-body">
+          <div class="topic-list" id="topics-list">
+            <div class="empty-state"><i class="ti ti-books"></i>Type a topic in the chat to get started</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right col -->
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <!-- Due today -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Due Today</div>
+              <div class="panel-sub">Scheduled by SM-2 algorithm</div>
+            </div>
+            <button class="panel-action" onclick="openQuizModal()">Start all <i class="ti ti-arrow-right"></i></button>
+          </div>
+          <div class="panel-body" id="due-cards-body">
+            <div class="empty-state"><i class="ti ti-circle-check"></i>All caught up!</div>
+          </div>
+        </div>
+
+        <!-- Weak areas -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Weak Areas</div>
+            <div class="panel-sub">Detected by Progress Agent</div>
+          </div>
+          <div class="panel-body" id="weak-areas-body">
+            <div class="empty-state"><i class="ti ti-award"></i>No weak areas yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="bottom-row">
+
+      <!-- Agent chat -->
+      <div class="agent-panel">
+        <div class="agent-header">
+          <div class="agent-avatar"><i class="ti ti-robot"></i></div>
+          <div>
+            <div class="agent-name">StudyMind Agent</div>
+            <div class="agent-status" id="agent-status-text">Online · Gemini Flash</div>
+          </div>
+        </div>
+        <div class="agent-messages" id="msgs">
+          <div class="msg agent">
+            <div class="msg-bubble">Hi! I'm your StudyMind agent — I <em>teach</em> concepts first, then help you practice.<br><br>
+              Choose a learning mode above, then try:<br><br>
+              <strong>📖 "I want to learn Machine Learning"</strong><br>
+              <strong>📝 "Give me a lesson on Neural Networks"</strong><br>
+              <strong>🤔 "Guide me through Backpropagation"</strong><br>
+              <strong>🃏 "Quiz me on Machine Learning"</strong>
+            </div>
+            <span class="msg-time">now</span>
+          </div>
+        </div>
+        <div style="padding:8px 16px 0;display:flex;gap:6px;border-top:1px solid var(--border);background:#fff">
+        <button class="mode-btn active" data-mode="explain" onclick="setMode('explain')" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--p50);color:var(--p600);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all 0.15s">Explain</button>
+        <button class="mode-btn" data-mode="lesson" onclick="setMode('lesson')" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text4);font-size:11px;font-weight:500;cursor:pointer;font-family:var(--font-body);transition:all 0.15s">Lesson</button>
+        <button class="mode-btn" data-mode="socratic" onclick="setMode('socratic')" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text4);font-size:11px;font-weight:500;cursor:pointer;font-family:var(--font-body);transition:all 0.15s">Socratic</button>
+      </div>
+      <div class="agent-input-row">
+          <input class="agent-input" id="chatInput" type="text" placeholder="Ask me anything…" />
+          <button class="agent-send" id="sendBtn" onclick="sendMsg()"><i class="ti ti-send"></i></button>
+        </div>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Study Activity</div>
+            <div class="panel-sub">Last 90 days</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="heatmap" id="heatmap"></div>
+          <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div class="heat-cell"></div>None</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div class="heat-cell l1"></div>1–5</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div class="heat-cell l2"></div>6–15</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div class="heat-cell l3"></div>16–30</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div class="heat-cell l4"></div>30+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendation -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Agent Recommendation</div>
+            <div class="panel-sub">Powered by Progress Agent + Gemini</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="prog-row"><span>Cards reviewed</span><span id="prog-reviewed-lbl" style="color:var(--p300);font-weight:600">—</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-reviewed" style="width:0%;background:linear-gradient(90deg,var(--p600),var(--p400))"></div></div>
+          <div class="prog-row"><span>Overall mastery</span><span id="prog-mastery-lbl" style="color:var(--green);font-weight:600">—</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-mastery" style="width:0%;background:linear-gradient(90deg,var(--green),#22d3ee)"></div></div>
+          <div style="background:rgba(124,92,252,0.08);border:1px solid rgba(124,92,252,0.2);border-radius:var(--radius);padding:14px;margin-top:6px">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-bulb" style="color:var(--p400)"></i> Agent says</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.6" id="recommendation-text">Loading recommendation…</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Logs view -->
+  <div class="content" id="view-logs" style="display:none">
+    <div class="log-panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Agent Logs — Live MCP Tool Calls</div>
+          <div class="panel-sub">Every interaction with MongoDB Atlas is logged here in real time</div>
+        </div>
+        <button class="panel-action" onclick="clearLogs()"><i class="ti ti-trash"></i> Clear</button>
+      </div>
+      <div class="log-body" id="log-body">
+        <div class="log-entry info">— Waiting for agent activity —</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Quiz Modal -->
+<div class="modal-overlay" id="quiz-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeQuizModal()"><i class="ti ti-x"></i></button>
+    <div id="quiz-loading" style="text-align:center;padding:20px;color:var(--text3)">
+      <i class="ti ti-loader" style="font-size:24px;animation:spin 1s linear infinite;display:block;margin-bottom:8px"></i>
+      Fetching next card from MongoDB…
+    </div>
+    <div id="quiz-content" style="display:none">
+      <div class="quiz-topic" id="q-topic"></div>
+      <div class="quiz-question" id="q-question"></div>
+      <textarea class="quiz-answer-input" id="q-answer" placeholder="Type your answer here…" rows="3"></textarea>
+      <div class="quiz-footer">
+        <span class="quiz-diff" id="q-diff"></span>
+        <button class="quiz-submit" id="q-submit" onclick="submitAnswer()">Submit Answer</button>
+      </div>
+      <div class="quiz-result" id="q-result">
+        <div class="result-label" id="q-result-label"></div>
+        <div id="q-feedback"></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text3)" id="q-next-info"></div>
+        <button style="margin-top:12px;padding:8px 18px;border-radius:var(--radius);background:var(--p600);border:none;color:#fff;font-size:13px;cursor:pointer;font-family:var(--font-body)" onclick="loadNextCard()">Next Card →</button>
+      </div>
+    </div>
+    <div id="quiz-done" style="display:none;text-align:center;padding:24px">
+      <i class="ti ti-circle-check" style="font-size:36px;color:var(--green);display:block;margin-bottom:12px"></i>
+      <div style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:6px">All caught up!</div>
+      <div style="font-size:13px;color:var(--text3)">No cards due right now. Add a new topic or check back later.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<style>
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+
+<script>
+// ─────────────────────────────────────────
+//  CONFIG
+// ─────────────────────────────────────────
+const API   = "https://simple-python-script--anshumanbahekar.replit.app";
+const USER  = "anshuman";
+let currentCard = null;
+let allLogs     = [];
+
+// ─────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-GB", {weekday:"long", day:"numeric", month:"long"});
+  buildHeatmap();
+  refreshAll();
+  document.getElementById("chatInput").addEventListener("keydown", e => { if(e.key==="Enter") sendMsg(); });
+});
+
+async function refreshAll() {
+  await loadProgress();
+}
+
+// ─────────────────────────────────────────
+//  VIEWS
+// ─────────────────────────────────────────
+function showView(v) {
+  document.getElementById("view-dashboard").style.display = v === "dashboard" ? "block" : "none";
+  document.getElementById("view-logs").style.display      = v === "logs"      ? "block" : "none";
+}
+
+// ─────────────────────────────────────────
+//  LOAD PROGRESS (Progress Agent)
+// ─────────────────────────────────────────
+async function loadProgress() {
+  try {
+    const res  = await fetch(`${API}/progress?user_id=${USER}`, {headers: authHeaders()});
+    const data = await res.json();
+
+    // Stats
+    document.getElementById("stat-mastery").textContent       = (data.overall_mastery || 0) + "%";
+    document.getElementById("stat-mastery-delta").innerHTML   = `<i class="ti ti-chart-line"></i> From MongoDB aggregate`;
+    document.getElementById("stat-streak").textContent        = data.streak_days || 0;
+    document.getElementById("stat-streak-delta").innerHTML    = data.streak_days > 0 ? `<i class="ti ti-flame"></i> Keep it going!` : `<i class="ti ti-clock"></i> Start today`;
+    document.getElementById("stat-due").textContent           = data.due_today || 0;
+    document.getElementById("stat-due-delta").innerHTML       = data.due_today > 0 ? `<i class="ti ti-alert-triangle"></i> Cards waiting` : `<i class="ti ti-circle-check"></i> All reviewed`;
+    document.getElementById("streak-label").textContent       = `${data.streak_days || 0}-day streak`;
+
+    // Topics
+    const topics = data.topics || [];
+    document.getElementById("nb-topics").textContent = topics.length || "0";
+    document.getElementById("stat-cards").textContent = topics.reduce((s, t) => s + (t.total_cards || 0), 0) || "—";
+    document.getElementById("stat-cards-delta").innerHTML = `<i class="ti ti-database"></i> Stored in Atlas`;
+    renderTopics(topics);
+
+    // Weak areas
+    renderWeakAreas(data.weak_areas || []);
+
+    // Progress bars
+    const mastery = data.overall_mastery || 0;
+    const reviewed = Math.min(100, (data.total_reviewed || 0) / 2);
+    document.getElementById("prog-mastery").style.width     = mastery + "%";
+    document.getElementById("prog-mastery-lbl").textContent = mastery + "%";
+    document.getElementById("prog-reviewed").style.width    = reviewed + "%";
+    document.getElementById("prog-reviewed-lbl").textContent = (data.total_reviewed || 0) + " reviews";
+
+    // Recommendation
+    document.getElementById("recommendation-text").textContent = data.recommendation || "Add a topic to get started.";
+
+    // Logs
+    if (data.logs) appendLogs(data.logs);
+
+    // Due cards (placeholder — fetched from quiz/next)
+    renderDueCards(data.due_today || 0, topics);
+
+  } catch(e) {
+    showToast("Could not reach backend. Is Replit running?", "error");
+    document.getElementById("recommendation-text").textContent = "⚠ Backend offline — run main.py in Replit";
+  }
+}
+
+// ─────────────────────────────────────────
+//  RENDER TOPICS
+// ─────────────────────────────────────────
+const TOPIC_COLORS = [
+  {bg:"rgba(124,92,252,0.15)",color:"var(--p400)",icon:"ti-cpu"},
+  {bg:"rgba(52,211,153,0.1)",color:"var(--green)",icon:"ti-atom-2"},
+  {bg:"rgba(251,191,36,0.1)",color:"var(--amber)",icon:"ti-math"},
+  {bg:"rgba(34,211,238,0.1)",color:"var(--teal)",icon:"ti-chart-histogram"},
+  {bg:"rgba(248,113,113,0.1)",color:"var(--red)",icon:"ti-code"},
+  {bg:"rgba(124,92,252,0.12)",color:"var(--p300)",icon:"ti-microscope"},
+];
+
+function renderTopics(topics) {
+  const el = document.getElementById("topics-list");
+  if (!topics.length) {
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-books"></i>No topics yet — type "I want to learn X" in the chat</div>`;
+    return;
+  }
+  el.innerHTML = topics.slice(0, 6).map((t, i) => {
+    const c   = TOPIC_COLORS[i % TOPIC_COLORS.length];
+    const pct = Math.round(t.mastery || 0);
+    const barColor = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--p500)" : "var(--amber)";
+    const pctColor = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--p400)" : "var(--amber)";
+    return `
+    <div class="topic-item" onclick="startTopicQuiz('${t.topic_id}')">
+      <div class="topic-dot" style="background:${c.bg};color:${c.color}"><i class="ti ${c.icon}"></i></div>
+      <div class="topic-info">
+        <div class="topic-name">${t.title}</div>
+        <div class="topic-meta">${t.total_cards || 0} cards · Last from MongoDB</div>
+      </div>
+      <div class="topic-right">
+        <div class="mastery-pct" style="color:${pctColor}">${pct}%</div>
+        <div class="mastery-bar"><div class="mastery-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ─────────────────────────────────────────
+//  RENDER DUE CARDS (summary)
+// ─────────────────────────────────────────
+function renderDueCards(count, topics) {
+  const el = document.getElementById("due-cards-body");
+  if (!count) {
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-circle-check"></i>All caught up for today!</div>`;
+    return;
+  }
+  const diffs = ["hard","medium","easy","hard","medium"];
+  const rows  = topics.slice(0, 5).map((t, i) => `
+    <div class="due-item">
+      <div class="due-rank">${i+1}</div>
+      <div class="due-text">
+        <div class="due-concept">${t.title}</div>
+        <div class="due-topic-name">${t.total_cards || 0} cards due</div>
+      </div>
+      <span class="due-badge ${diffs[i]}">${diffs[i]}</span>
+    </div>`).join("");
+  el.innerHTML = rows || `<div class="empty-state"><i class="ti ti-circle-check"></i>All caught up!</div>`;
+}
+
+// ─────────────────────────────────────────
+//  RENDER WEAK AREAS
+// ─────────────────────────────────────────
+function renderWeakAreas(weak) {
+  const el = document.getElementById("weak-areas-body");
+  if (!weak.length) {
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-award"></i>No weak areas detected yet</div>`;
+    return;
+  }
+  el.innerHTML = weak.map(w => `
+    <div class="weak-item">
+      <i class="ti ti-alert-circle" style="font-size:15px;color:var(--red)"></i>
+      <span class="weak-concept">${w.concept} <span style="font-size:11px;color:var(--text3)">(${w.topic})</span></span>
+      <span class="weak-score">${w.confidence}%</span>
+    </div>`).join("");
+}
+
+// ─────────────────────────────────────────
+//  CHAT — ORCHESTRATOR
+// ─────────────────────────────────────────
+async function sendMsg() {
+  const input = document.getElementById("chatInput");
+  const text  = input.value.trim();
+  if (!text) return;
+
+  appendUserMsg(text);
+  input.value = "";
+  setAgentBusy(true);
+  showTyping();
+
+  try {
+    const res  = await fetch(`${API}/chat`, {
+      method:  "POST",
+      headers: {"Content-Type":"application/json"},
+      body:    JSON.stringify({ message: text, user_id: USER })
+    });
+    const data = await res.json();
+
+    removeTyping();
+    appendAgentMsg(data.reply || "Done.");
+
+    if (data.logs) appendLogs(data.logs);
+    if (data.intent === "ingest" || data.intent === "progress") {
+      setTimeout(refreshAll, 800);
+    }
+    if (data.intent === "quiz" && data.data?.card_id) {
+      currentCard = data.data;
+      setTimeout(openQuizModal, 400);
+    }
+  } catch(e) {
+    removeTyping();
+    appendAgentMsg("⚠ Cannot reach backend. Make sure Replit is running.");
+  }
+  setAgentBusy(false);
+}
+
+function promptIngest() {
+  document.getElementById("chatInput").value = "I want to learn ";
+  document.getElementById("chatInput").focus();
+}
+
+// ─────────────────────────────────────────
+//  QUIZ MODAL
+// ─────────────────────────────────────────
+async function openQuizModal() {
+  document.getElementById("quiz-modal").classList.add("open");
+  document.getElementById("quiz-loading").style.display = "block";
+  document.getElementById("quiz-content").style.display = "none";
+  document.getElementById("quiz-done").style.display    = "none";
+  await loadNextCard();
+}
+
+function closeQuizModal() {
+  document.getElementById("quiz-modal").classList.remove("open");
+  refreshAll();
+}
+
+async function loadNextCard() {
+  document.getElementById("quiz-loading").style.display = "block";
+  document.getElementById("quiz-content").style.display = "none";
+  document.getElementById("quiz-done").style.display    = "none";
+  document.getElementById("q-result").classList.remove("open");
+  document.getElementById("q-answer").value = "";
+
+  try {
+    const res  = await fetch(`${API}/quiz/next`, {
+      method:  "POST",
+      headers: {"Content-Type":"application/json"},
+      body:    JSON.stringify({ user_id: USER })
+    });
+    const data = await res.json();
+
+    document.getElementById("quiz-loading").style.display = "none";
+
+    if (data.done) {
+      document.getElementById("quiz-done").style.display = "block";
+      return;
+    }
+
+    currentCard = data;
+    document.getElementById("q-topic").textContent    = data.topic || "";
+    document.getElementById("q-question").textContent = data.question || "";
+    document.getElementById("q-diff").textContent     = data.difficulty || "medium";
+    document.getElementById("q-diff").className       = `quiz-diff ${data.difficulty || "medium"}`;
+    document.getElementById("q-submit").disabled      = false;
+    document.getElementById("quiz-content").style.display = "block";
+    appendLogs([`[MCP mongodb_find] Fetched card: "${(data.question||"").slice(0,60)}…"`]);
+
+  } catch(e) {
+    document.getElementById("quiz-loading").style.display = "none";
+    document.getElementById("quiz-done").style.display    = "block";
+    showToast("Backend offline — start Replit first", "error");
+  }
+}
+
+async function submitAnswer() {
+  const answer = document.getElementById("q-answer").value.trim();
+  if (!answer || !currentCard) return;
+
+  document.getElementById("q-submit").disabled = true;
+  document.getElementById("q-submit").textContent = "Evaluating…";
+
+  try {
+    const res  = await fetch(`${API}/quiz/answer`, {
+      method:  "POST",
+      headers: {"Content-Type":"application/json"},
+      body:    JSON.stringify({ card_id: currentCard.card_id, user_id: USER, user_answer: answer })
+    });
+    const data = await res.json();
+
+    const result = document.getElementById("q-result");
+    result.className = `quiz-result open ${data.correct ? "correct" : "wrong"}`;
+    document.getElementById("q-result-label").textContent = data.correct ? "✓ Correct" : "✗ Not quite";
+    document.getElementById("q-feedback").textContent     = data.feedback || "";
+    document.getElementById("q-next-info").textContent    =
+      `Next review: ${data.next_review || "tomorrow"} · Confidence: ${Math.round((data.confidence||0)*100)}% · Interval: ${data.interval_days||1}d`;
+
+    document.getElementById("q-submit").textContent = "Submit Answer";
+    if (data.logs) appendLogs(data.logs);
+
+  } catch(e) {
+    document.getElementById("q-submit").disabled    = false;
+    document.getElementById("q-submit").textContent = "Submit Answer";
+    showToast("Error evaluating answer", "error");
+  }
+}
+
+function startTopicQuiz(topicId) {
+  openQuizModal();
+}
+
+// ─────────────────────────────────────────
+//  CHAT HELPERS
+// ─────────────────────────────────────────
+function appendUserMsg(text) {
+  const msgs = document.getElementById("msgs");
+  const d    = document.createElement("div");
+  d.className = "msg user";
+  d.innerHTML = `<div class="msg-bubble">${escHtml(text)}</div><span class="msg-time">${nowTime()}</span>`;
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendAgentMsg(text) {
+  const msgs = document.getElementById("msgs");
+  const d    = document.createElement("div");
+  d.className = "msg agent";
+  d.innerHTML = `<div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/\n/g,"<br>")}</div><span class="msg-time">${nowTime()}</span>`;
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById("msgs");
+  const d    = document.createElement("div");
+  d.className = "msg agent"; d.id = "typing-indicator";
+  d.innerHTML = `<div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+}
+function removeTyping() {
+  const t = document.getElementById("typing-indicator");
+  if (t) t.remove();
+}
+
+function setAgentBusy(busy) {
+  document.getElementById("sendBtn").disabled        = busy;
+  document.getElementById("chatInput").disabled      = busy;
+  document.getElementById("agent-status-text").textContent = busy ? "Thinking…" : "Online · Gemini Flash";
+}
+
+// ─────────────────────────────────────────
+//  LOGS
+// ─────────────────────────────────────────
+function appendLogs(logs) {
+  if (!logs || !logs.length) return;
+  allLogs = allLogs.concat(logs);
+  const body = document.getElementById("log-body");
+  if (body.querySelector(".log-entry.info")?.textContent.includes("Waiting")) body.innerHTML = "";
+  logs.forEach(l => {
+    const d = document.createElement("div");
+    const cls = l.includes("[MCP") ? "mcp" : l.includes("[Gemini]") ? "gemini" : l.includes("[SM-2]") ? "sm2" : "info";
+    d.className = `log-entry ${cls}`;
+    d.textContent = `[${nowTime()}] ${l}`;
+    body.appendChild(d);
+  });
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearLogs() {
+  allLogs = [];
+  document.getElementById("log-body").innerHTML = `<div class="log-entry info">— Logs cleared —</div>`;
+}
+
+// ─────────────────────────────────────────
+//  HEATMAP
+// ─────────────────────────────────────────
+function buildHeatmap() {
+  const hm  = document.getElementById("heatmap");
+  const lvl = [0,0,0,1,1,2,2,3,4];
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElement("div");
+    c.className = "heat-cell";
+    const r = Math.random();
+    if (r > 0.38) {
+      const l = lvl[Math.floor(Math.random() * lvl.length)];
+      if (l > 0) c.classList.add("l" + l);
+    }
+    if (i > 76 && Math.random() > 0.3) {
+      c.className = "heat-cell l" + (Math.floor(Math.random()*3)+2);
+    }
+    hm.appendChild(c);
+  }
+}
+
+// ─────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────
+function showToast(msg, type = "info") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = `toast ${type} show`;
+  setTimeout(() => t.className = "toast", 3500);
+}
+
+// ─────────────────────────────────────────
+//  UTILS
+// ─────────────────────────────────────────
+function nowTime() {
+  return new Date().toLocaleTimeString("en-GB", {hour:"2-digit",minute:"2-digit"});
+}
+function escHtml(t) {
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+</script>
+</body>
+</html>
