@@ -692,9 +692,11 @@ function appendUserMsg(text){
   msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
 }
 function appendAgentMsg(text){
-  const msgs=document.getElementById("msgs");const d=document.createElement("div");d.className="msg agent";
-  d.innerHTML=`<div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/
-/g,"<br>")}</div><span class="msg-time">${nowTime()}</span>`;
+  const msgs=document.getElementById("msgs");
+  const d=document.createElement("div");
+  d.className="msg agent";
+  const html=text.split("**").map((s,i)=>i%2===1?"<strong>"+s+"</strong>":s).join("").split("\n").join("<br>");
+  d.innerHTML="<div class=\"msg-bubble\">"+html+"</div><span class=\"msg-time\">"+nowTime()+"</span>";
   msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
 }
 function showTyping(){
