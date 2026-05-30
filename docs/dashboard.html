@@ -464,397 +464,291 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </style>
 
 <script>
-// ─────────────────────────────────────────
-//  CONFIG
-// ─────────────────────────────────────────
 const API   = "https://simple-python-script--anshumanbahekar.replit.app";
-const USER  = "anshuman";
-let currentCard = null;
-let allLogs     = [];
+const TOKEN = localStorage.getItem("sm_token") || "";
+const USER  = localStorage.getItem("sm_user_id") || "guest";
+const DNAME = localStorage.getItem("sm_display_name") || "Guest";
 
-// ─────────────────────────────────────────
-//  INIT
-// ─────────────────────────────────────────
+if (!TOKEN) window.location.href = "index.html";
+
+function authHeaders() {
+  return {"Content-Type":"application/json","Authorization":"Bearer "+TOKEN};
+}
+
+let currentCard = null;
+let allLogs = [];
+let currentTopic = "";
+let currentMode = "explain";
+
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-GB", {weekday:"long", day:"numeric", month:"long"});
+  document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  const nameEl = document.getElementById("sidebar-name");
+  if(nameEl) nameEl.textContent = DNAME;
+  const avatarEl = document.querySelector(".user-avatar");
+  if(avatarEl) avatarEl.textContent = DNAME.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase();
   buildHeatmap();
   refreshAll();
   document.getElementById("chatInput").addEventListener("keydown", e => { if(e.key==="Enter") sendMsg(); });
 });
 
-async function refreshAll() {
-  await loadProgress();
+async function refreshAll(){ await loadProgress(); }
+
+function showView(v){
+  document.getElementById("view-dashboard").style.display = v==="dashboard"?"block":"none";
+  document.getElementById("view-logs").style.display      = v==="logs"?"block":"none";
 }
 
-// ─────────────────────────────────────────
-//  VIEWS
-// ─────────────────────────────────────────
-function showView(v) {
-  document.getElementById("view-dashboard").style.display = v === "dashboard" ? "block" : "none";
-  document.getElementById("view-logs").style.display      = v === "logs"      ? "block" : "none";
-}
-
-// ─────────────────────────────────────────
-//  LOAD PROGRESS (Progress Agent)
-// ─────────────────────────────────────────
-async function loadProgress() {
-  try {
-    const res  = await fetch(`${API}/progress?user_id=${USER}`, {headers: authHeaders()});
+async function loadProgress(){
+  try{
+    const res  = await fetch(`${API}/progress?user_id=${USER}&token=${TOKEN}`, {headers: authHeaders()});
+    if(!res.ok) throw new Error("HTTP "+res.status);
     const data = await res.json();
-
-    // Stats
-    document.getElementById("stat-mastery").textContent       = (data.overall_mastery || 0) + "%";
-    document.getElementById("stat-mastery-delta").innerHTML   = `<i class="ti ti-chart-line"></i> From MongoDB aggregate`;
-    document.getElementById("stat-streak").textContent        = data.streak_days || 0;
-    document.getElementById("stat-streak-delta").innerHTML    = data.streak_days > 0 ? `<i class="ti ti-flame"></i> Keep it going!` : `<i class="ti ti-clock"></i> Start today`;
-    document.getElementById("stat-due").textContent           = data.due_today || 0;
-    document.getElementById("stat-due-delta").innerHTML       = data.due_today > 0 ? `<i class="ti ti-alert-triangle"></i> Cards waiting` : `<i class="ti ti-circle-check"></i> All reviewed`;
-    document.getElementById("streak-label").textContent       = `${data.streak_days || 0}-day streak`;
-
-    // Topics
-    const topics = data.topics || [];
-    document.getElementById("nb-topics").textContent = topics.length || "0";
-    document.getElementById("stat-cards").textContent = topics.reduce((s, t) => s + (t.total_cards || 0), 0) || "—";
-    document.getElementById("stat-cards-delta").innerHTML = `<i class="ti ti-database"></i> Stored in Atlas`;
+    document.getElementById("stat-mastery").textContent     = (data.overall_mastery||0)+"%";
+    document.getElementById("stat-mastery-delta").innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> From MongoDB`;
+    document.getElementById("stat-streak").textContent      = data.streak_days||0;
+    document.getElementById("stat-streak-delta").innerHTML  = data.streak_days>0?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Keep it going!`:`Start today`;
+    document.getElementById("stat-due").textContent         = data.due_today||0;
+    document.getElementById("stat-due-delta").innerHTML     = data.due_today>0?`Cards waiting`:`All reviewed`;
+    document.getElementById("streak-label").textContent     = `${data.streak_days||0}-day streak`;
+    const topics = data.topics||[];
+    document.getElementById("nb-topics").textContent  = topics.length||"0";
+    document.getElementById("stat-cards").textContent = topics.reduce((s,t)=>s+(t.total_cards||0),0)||"—";
+    document.getElementById("stat-cards-delta").innerHTML = `Stored in Atlas`;
     renderTopics(topics);
-
-    // Weak areas
-    renderWeakAreas(data.weak_areas || []);
-
-    // Progress bars
-    const mastery = data.overall_mastery || 0;
-    const reviewed = Math.min(100, (data.total_reviewed || 0) / 2);
-    document.getElementById("prog-mastery").style.width     = mastery + "%";
-    document.getElementById("prog-mastery-lbl").textContent = mastery + "%";
-    document.getElementById("prog-reviewed").style.width    = reviewed + "%";
-    document.getElementById("prog-reviewed-lbl").textContent = (data.total_reviewed || 0) + " reviews";
-
-    // Recommendation
-    document.getElementById("recommendation-text").textContent = data.recommendation || "Add a topic to get started.";
-
-    // Logs
-    if (data.logs) appendLogs(data.logs);
-
-    // Due cards (placeholder — fetched from quiz/next)
-    renderDueCards(data.due_today || 0, topics);
-
-  } catch(e) {
-    showToast("Could not reach backend. Is Replit running?", "error");
-    document.getElementById("recommendation-text").textContent = "⚠ Backend offline — run main.py in Replit";
+    renderWeakAreas(data.weak_areas||[]);
+    const mastery  = data.overall_mastery||0;
+    const reviewed = Math.min(100,(data.total_reviewed||0)/2);
+    document.getElementById("prog-mastery").style.width     = mastery+"%";
+    document.getElementById("prog-mastery-lbl").textContent = mastery+"%";
+    document.getElementById("prog-reviewed").style.width    = reviewed+"%";
+    document.getElementById("prog-reviewed-lbl").textContent= (data.total_reviewed||0)+" reviews";
+    document.getElementById("recommendation-text").textContent = data.recommendation||"Type 'I want to learn [topic]' to get started.";
+    if(data.logs) appendLogs(data.logs);
+    renderDueCards(data.due_today||0,topics);
+  }catch(e){
+    document.getElementById("recommendation-text").textContent = "Type 'I want to learn Machine Learning' in the chat below to get started!";
+    console.log("Progress error:", e);
   }
 }
 
-// ─────────────────────────────────────────
-//  RENDER TOPICS
-// ─────────────────────────────────────────
-const TOPIC_COLORS = [
-  {bg:"rgba(124,92,252,0.15)",color:"var(--p400)",icon:"ti-cpu"},
-  {bg:"rgba(52,211,153,0.1)",color:"var(--green)",icon:"ti-atom-2"},
-  {bg:"rgba(251,191,36,0.1)",color:"var(--amber)",icon:"ti-math"},
-  {bg:"rgba(34,211,238,0.1)",color:"var(--teal)",icon:"ti-chart-histogram"},
-  {bg:"rgba(248,113,113,0.1)",color:"var(--red)",icon:"ti-code"},
-  {bg:"rgba(124,92,252,0.12)",color:"var(--p300)",icon:"ti-microscope"},
+const TOPIC_COLORS=[
+  {bg:"linear-gradient(135deg,rgba(168,85,247,0.12),rgba(139,92,246,0.07))",color:"var(--p600)",icon:"cpu"},
+  {bg:"linear-gradient(135deg,rgba(5,150,105,0.1),rgba(16,185,129,0.06))",color:"var(--green)",icon:"atom"},
+  {bg:"linear-gradient(135deg,rgba(217,119,6,0.1),rgba(245,158,11,0.06))",color:"var(--amber)",icon:"math"},
+  {bg:"linear-gradient(135deg,rgba(8,145,178,0.1),rgba(6,182,212,0.06))",color:"var(--teal)",icon:"chart"},
+  {bg:"linear-gradient(135deg,rgba(220,38,38,0.08),rgba(239,68,68,0.05))",color:"var(--red)",icon:"code"},
+  {bg:"linear-gradient(135deg,rgba(168,85,247,0.1),rgba(196,133,253,0.06))",color:"var(--p500)",icon:"star"},
 ];
 
-function renderTopics(topics) {
-  const el = document.getElementById("topics-list");
-  if (!topics.length) {
-    el.innerHTML = `<div class="empty-state"><i class="ti ti-books"></i>No topics yet — type "I want to learn X" in the chat</div>`;
-    return;
-  }
-  el.innerHTML = topics.slice(0, 6).map((t, i) => {
-    const c   = TOPIC_COLORS[i % TOPIC_COLORS.length];
-    const pct = Math.round(t.mastery || 0);
-    const barColor = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--p500)" : "var(--amber)";
-    const pctColor = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--p400)" : "var(--amber)";
-    return `
-    <div class="topic-item" onclick="startTopicQuiz('${t.topic_id}')">
-      <div class="topic-dot" style="background:${c.bg};color:${c.color}"><i class="ti ${c.icon}"></i></div>
-      <div class="topic-info">
-        <div class="topic-name">${t.title}</div>
-        <div class="topic-meta">${t.total_cards || 0} cards · Last from MongoDB</div>
-      </div>
-      <div class="topic-right">
-        <div class="mastery-pct" style="color:${pctColor}">${pct}%</div>
-        <div class="mastery-bar"><div class="mastery-fill" style="width:${pct}%;background:${barColor}"></div></div>
-      </div>
+function renderTopics(topics){
+  const el=document.getElementById("topics-list");
+  if(!topics.length){el.innerHTML=`<div class="empty-state"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;color:var(--bg4)"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><br>No topics yet — type "I want to learn X" in the chat</div>`;return;}
+  el.innerHTML=topics.slice(0,6).map((t,i)=>{
+    const c=TOPIC_COLORS[i%TOPIC_COLORS.length];
+    const pct=Math.round(t.mastery||0);
+    const barColor=pct>=70?"var(--green)":pct>=40?"var(--p500)":"var(--amber)";
+    const pctColor=pct>=70?"var(--green)":pct>=40?"var(--p600)":"var(--amber)";
+    return`<div class="topic-item" onclick="startTopicQuiz('${t.topic_id}')">
+      <div class="topic-dot" style="background:${c.bg};color:${c.color}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="topic-info"><div class="topic-name">${t.title}</div><div class="topic-meta">${t.total_cards||0} cards · MongoDB Atlas</div></div>
+      <div class="topic-right"><div class="mastery-pct" style="color:${pctColor}">${pct}%</div><div class="mastery-bar"><div class="mastery-fill" style="width:${pct}%;background:${barColor}"></div></div></div>
     </div>`;
   }).join("");
 }
 
-// ─────────────────────────────────────────
-//  RENDER DUE CARDS (summary)
-// ─────────────────────────────────────────
-function renderDueCards(count, topics) {
-  const el = document.getElementById("due-cards-body");
-  if (!count) {
-    el.innerHTML = `<div class="empty-state"><i class="ti ti-circle-check"></i>All caught up for today!</div>`;
-    return;
-  }
-  const diffs = ["hard","medium","easy","hard","medium"];
-  const rows  = topics.slice(0, 5).map((t, i) => `
-    <div class="due-item">
-      <div class="due-rank">${i+1}</div>
-      <div class="due-text">
-        <div class="due-concept">${t.title}</div>
-        <div class="due-topic-name">${t.total_cards || 0} cards due</div>
-      </div>
-      <span class="due-badge ${diffs[i]}">${diffs[i]}</span>
-    </div>`).join("");
-  el.innerHTML = rows || `<div class="empty-state"><i class="ti ti-circle-check"></i>All caught up!</div>`;
+function renderDueCards(count,topics){
+  const el=document.getElementById("due-cards-body");
+  if(!count){el.innerHTML=`<div class="empty-state"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;color:var(--bg4)"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg><br>All caught up!</div>`;return;}
+  const diffs=["hard","medium","easy","hard","medium"];
+  el.innerHTML=topics.slice(0,5).map((t,i)=>`
+    <div class="due-item"><div class="due-rank">${i+1}</div>
+    <div class="due-text"><div class="due-concept">${t.title}</div><div class="due-topic-name">${t.total_cards||0} cards due</div></div>
+    <span class="due-badge ${diffs[i]}">${diffs[i]}</span></div>`).join("");
 }
 
-// ─────────────────────────────────────────
-//  RENDER WEAK AREAS
-// ─────────────────────────────────────────
-function renderWeakAreas(weak) {
-  const el = document.getElementById("weak-areas-body");
-  if (!weak.length) {
-    el.innerHTML = `<div class="empty-state"><i class="ti ti-award"></i>No weak areas detected yet</div>`;
-    return;
-  }
-  el.innerHTML = weak.map(w => `
-    <div class="weak-item">
-      <i class="ti ti-alert-circle" style="font-size:15px;color:var(--red)"></i>
-      <span class="weak-concept">${w.concept} <span style="font-size:11px;color:var(--text3)">(${w.topic})</span></span>
-      <span class="weak-score">${w.confidence}%</span>
-    </div>`).join("");
+function renderWeakAreas(weak){
+  const el=document.getElementById("weak-areas-body");
+  if(!weak.length){el.innerHTML=`<div class="empty-state"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;color:var(--bg4)"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg><br>No weak areas yet</div>`;return;}
+  el.innerHTML=weak.map(w=>`<div class="weak-item"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="weak-concept">${w.concept} <span style="font-size:11px;color:var(--text4)">(${w.topic})</span></span><span class="weak-score">${w.confidence}%</span></div>`).join("");
 }
 
-// ─────────────────────────────────────────
-//  CHAT — ORCHESTRATOR
-// ─────────────────────────────────────────
-async function sendMsg() {
-  const input = document.getElementById("chatInput");
-  const text  = input.value.trim();
-  if (!text) return;
+// ── MODE SELECTOR ──
+function setMode(mode){
+  currentMode=mode;
+  document.querySelectorAll(".mode-btn").forEach(b=>{
+    const active=b.dataset.mode===mode;
+    b.style.background=active?"var(--p50)":"none";
+    b.style.color=active?"var(--p600)":"var(--text4)";
+    b.style.borderColor=active?"rgba(168,85,247,0.25)":"var(--border)";
+    b.style.fontWeight=active?"600":"500";
+  });
+}
 
-  appendUserMsg(text);
-  input.value = "";
-  setAgentBusy(true);
-  showTyping();
-
-  try {
-    const res  = await fetch(`${API}/chat`, {
-      method:  "POST",
-      headers: {"Content-Type":"application/json"},
-      body:    JSON.stringify({ message: text, user_id: USER })
-    });
-    const data = await res.json();
-
+// ── CHAT ──
+async function sendMsg(){
+  const input=document.getElementById("chatInput");
+  const text=input.value.trim();
+  if(!text)return;
+  appendUserMsg(text);input.value="";setAgentBusy(true);showTyping();
+  try{
+    const res=await fetch(`${API}/chat`,{method:"POST",headers:authHeaders(),body:JSON.stringify({message:text,user_id:USER,token:TOKEN,topic_context:currentTopic,mode:currentMode})});
+    const data=await res.json();
     removeTyping();
-    appendAgentMsg(data.reply || "Done.");
-
-    if (data.logs) appendLogs(data.logs);
-    if (data.intent === "ingest" || data.intent === "progress") {
-      setTimeout(refreshAll, 800);
+    appendAgentMsg(data.reply||"Done.");
+    if(data.logs)appendLogs(data.logs);
+    if(data.intent==="learn"||data.intent==="next_concept"){
+      if(data.topic)currentTopic=data.topic;
+      setTimeout(refreshAll,1500);
+      showQuickActions([
+        {label:"Next concept",msg:"next concept"},
+        {label:"Quiz me on this",msg:`quiz me on ${currentTopic}`},
+      ]);
     }
-    if (data.intent === "quiz" && data.data?.card_id) {
-      currentCard = data.data;
-      setTimeout(openQuizModal, 400);
-    }
-  } catch(e) {
-    removeTyping();
-    appendAgentMsg("⚠ Cannot reach backend. Make sure Replit is running.");
-  }
+    if(data.intent==="ingest"||data.intent==="progress")setTimeout(refreshAll,800);
+    if(data.intent==="quiz"&&data.data?.card_id){currentCard=data.data;setTimeout(openQuizModal,400);}
+  }catch(e){removeTyping();appendAgentMsg("⚠ Cannot reach backend. Make sure Replit is running.");}
   setAgentBusy(false);
 }
 
-function promptIngest() {
-  document.getElementById("chatInput").value = "I want to learn ";
-  document.getElementById("chatInput").focus();
+function showQuickActions(actions){
+  const msgs=document.getElementById("msgs");
+  const old=document.getElementById("quick-actions");if(old)old.remove();
+  const d=document.createElement("div");d.id="quick-actions";
+  d.style.cssText="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0 8px;align-self:flex-start";
+  actions.forEach(a=>{
+    const btn=document.createElement("button");
+    btn.textContent=a.label;
+    btn.style.cssText="padding:6px 12px;border-radius:20px;border:1px solid rgba(168,85,247,0.25);background:var(--p50);color:var(--p700);font-size:11.5px;font-weight:500;cursor:pointer;font-family:var(--font-body);transition:all 0.15s";
+    btn.onclick=()=>{document.getElementById("chatInput").value=a.msg;sendMsg();};
+    d.appendChild(btn);
+  });
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
 }
 
-// ─────────────────────────────────────────
-//  QUIZ MODAL
-// ─────────────────────────────────────────
-async function openQuizModal() {
+function promptIngest(){document.getElementById("chatInput").value="I want to learn ";document.getElementById("chatInput").focus();}
+
+// ── QUIZ MODAL ──
+async function openQuizModal(){
   document.getElementById("quiz-modal").classList.add("open");
-  document.getElementById("quiz-loading").style.display = "block";
-  document.getElementById("quiz-content").style.display = "none";
-  document.getElementById("quiz-done").style.display    = "none";
+  document.getElementById("quiz-loading").style.display="block";
+  document.getElementById("quiz-content").style.display="none";
+  document.getElementById("quiz-done").style.display="none";
   await loadNextCard();
 }
+function closeQuizModal(){document.getElementById("quiz-modal").classList.remove("open");refreshAll();}
 
-function closeQuizModal() {
-  document.getElementById("quiz-modal").classList.remove("open");
-  refreshAll();
-}
-
-async function loadNextCard() {
-  document.getElementById("quiz-loading").style.display = "block";
-  document.getElementById("quiz-content").style.display = "none";
-  document.getElementById("quiz-done").style.display    = "none";
+async function loadNextCard(){
+  document.getElementById("quiz-loading").style.display="block";
+  document.getElementById("quiz-content").style.display="none";
+  document.getElementById("quiz-done").style.display="none";
   document.getElementById("q-result").classList.remove("open");
-  document.getElementById("q-answer").value = "";
-
-  try {
-    const res  = await fetch(`${API}/quiz/next`, {
-      method:  "POST",
-      headers: {"Content-Type":"application/json"},
-      body:    JSON.stringify({ user_id: USER })
-    });
-    const data = await res.json();
-
-    document.getElementById("quiz-loading").style.display = "none";
-
-    if (data.done) {
-      document.getElementById("quiz-done").style.display = "block";
-      return;
-    }
-
-    currentCard = data;
-    document.getElementById("q-topic").textContent    = data.topic || "";
-    document.getElementById("q-question").textContent = data.question || "";
-    document.getElementById("q-diff").textContent     = data.difficulty || "medium";
-    document.getElementById("q-diff").className       = `quiz-diff ${data.difficulty || "medium"}`;
-    document.getElementById("q-submit").disabled      = false;
-    document.getElementById("quiz-content").style.display = "block";
+  document.getElementById("q-answer").value="";
+  try{
+    const res=await fetch(`${API}/quiz/next`,{method:"POST",headers:authHeaders(),body:JSON.stringify({user_id:USER,token:TOKEN})});
+    const data=await res.json();
+    document.getElementById("quiz-loading").style.display="none";
+    if(data.done){document.getElementById("quiz-done").style.display="block";return;}
+    currentCard=data;
+    document.getElementById("q-topic").querySelector("span").textContent=data.topic||"";
+    document.getElementById("q-question").textContent=data.question||"";
+    document.getElementById("q-diff").textContent=data.difficulty||"medium";
+    document.getElementById("q-diff").className=`quiz-diff ${data.difficulty||"medium"}`;
+    document.getElementById("q-submit").disabled=false;
+    document.getElementById("quiz-content").style.display="block";
     appendLogs([`[MCP mongodb_find] Fetched card: "${(data.question||"").slice(0,60)}…"`]);
-
-  } catch(e) {
-    document.getElementById("quiz-loading").style.display = "none";
-    document.getElementById("quiz-done").style.display    = "block";
-    showToast("Backend offline — start Replit first", "error");
+  }catch(e){
+    document.getElementById("quiz-loading").style.display="none";
+    document.getElementById("quiz-done").style.display="block";
   }
 }
 
-async function submitAnswer() {
-  const answer = document.getElementById("q-answer").value.trim();
-  if (!answer || !currentCard) return;
-
-  document.getElementById("q-submit").disabled = true;
-  document.getElementById("q-submit").textContent = "Evaluating…";
-
-  try {
-    const res  = await fetch(`${API}/quiz/answer`, {
-      method:  "POST",
-      headers: {"Content-Type":"application/json"},
-      body:    JSON.stringify({ card_id: currentCard.card_id, user_id: USER, user_answer: answer })
-    });
-    const data = await res.json();
-
-    const result = document.getElementById("q-result");
-    result.className = `quiz-result open ${data.correct ? "correct" : "wrong"}`;
-    document.getElementById("q-result-label").textContent = data.correct ? "✓ Correct" : "✗ Not quite";
-    document.getElementById("q-feedback").textContent     = data.feedback || "";
-    document.getElementById("q-next-info").textContent    =
-      `Next review: ${data.next_review || "tomorrow"} · Confidence: ${Math.round((data.confidence||0)*100)}% · Interval: ${data.interval_days||1}d`;
-
-    document.getElementById("q-submit").textContent = "Submit Answer";
-    if (data.logs) appendLogs(data.logs);
-
-  } catch(e) {
-    document.getElementById("q-submit").disabled    = false;
-    document.getElementById("q-submit").textContent = "Submit Answer";
-    showToast("Error evaluating answer", "error");
+async function submitAnswer(){
+  const answer=document.getElementById("q-answer").value.trim();
+  if(!answer||!currentCard)return;
+  document.getElementById("q-submit").disabled=true;
+  document.getElementById("q-submit").textContent="Evaluating…";
+  try{
+    const res=await fetch(`${API}/quiz/answer`,{method:"POST",headers:authHeaders(),body:JSON.stringify({card_id:currentCard.card_id,user_id:USER,user_answer:answer,token:TOKEN})});
+    const data=await res.json();
+    const result=document.getElementById("q-result");
+    result.className=`quiz-result open ${data.correct?"correct":"wrong"}`;
+    document.getElementById("q-result-label").textContent=data.correct?"✓ Correct":"✗ Not quite";
+    document.getElementById("q-feedback").textContent=data.feedback||"";
+    document.getElementById("q-next-info").textContent=`Next review: ${data.next_review||"tomorrow"} · Confidence: ${Math.round((data.confidence||0)*100)}% · Interval: ${data.interval_days||1}d`;
+    document.getElementById("q-submit").textContent="Submit Answer";
+    if(data.logs)appendLogs(data.logs);
+  }catch(e){
+    document.getElementById("q-submit").disabled=false;
+    document.getElementById("q-submit").textContent="Submit Answer";
   }
 }
 
-function startTopicQuiz(topicId) {
-  openQuizModal();
+function startTopicQuiz(topicId){openQuizModal();}
+
+// ── CHAT HELPERS ──
+function appendUserMsg(text){
+  const msgs=document.getElementById("msgs");const d=document.createElement("div");d.className="msg user";
+  d.innerHTML=`<div class="msg-bubble">${escHtml(text)}</div><span class="msg-time">${nowTime()}</span>`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+function appendAgentMsg(text){
+  const msgs=document.getElementById("msgs");const d=document.createElement("div");d.className="msg agent";
+  d.innerHTML=`<div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/
+/g,"<br>")}</div><span class="msg-time">${nowTime()}</span>`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+function showTyping(){
+  const msgs=document.getElementById("msgs");const d=document.createElement("div");d.className="msg agent";d.id="typing-indicator";
+  d.innerHTML=`<div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+function removeTyping(){const t=document.getElementById("typing-indicator");if(t)t.remove();}
+function setAgentBusy(busy){
+  document.getElementById("sendBtn").disabled=busy;
+  document.getElementById("chatInput").disabled=busy;
+  document.getElementById("agent-status-text").textContent=busy?"Thinking…":"Online · Gemini Flash";
 }
 
-// ─────────────────────────────────────────
-//  CHAT HELPERS
-// ─────────────────────────────────────────
-function appendUserMsg(text) {
-  const msgs = document.getElementById("msgs");
-  const d    = document.createElement("div");
-  d.className = "msg user";
-  d.innerHTML = `<div class="msg-bubble">${escHtml(text)}</div><span class="msg-time">${nowTime()}</span>`;
-  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
-}
-
-function appendAgentMsg(text) {
-  const msgs = document.getElementById("msgs");
-  const d    = document.createElement("div");
-  d.className = "msg agent";
-  d.innerHTML = `<div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/\n/g,"<br>")}</div><span class="msg-time">${nowTime()}</span>`;
-  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
-}
-
-function showTyping() {
-  const msgs = document.getElementById("msgs");
-  const d    = document.createElement("div");
-  d.className = "msg agent"; d.id = "typing-indicator";
-  d.innerHTML = `<div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
-  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
-}
-function removeTyping() {
-  const t = document.getElementById("typing-indicator");
-  if (t) t.remove();
-}
-
-function setAgentBusy(busy) {
-  document.getElementById("sendBtn").disabled        = busy;
-  document.getElementById("chatInput").disabled      = busy;
-  document.getElementById("agent-status-text").textContent = busy ? "Thinking…" : "Online · Gemini Flash";
-}
-
-// ─────────────────────────────────────────
-//  LOGS
-// ─────────────────────────────────────────
-function appendLogs(logs) {
-  if (!logs || !logs.length) return;
-  allLogs = allLogs.concat(logs);
-  const body = document.getElementById("log-body");
-  if (body.querySelector(".log-entry.info")?.textContent.includes("Waiting")) body.innerHTML = "";
-  logs.forEach(l => {
-    const d = document.createElement("div");
-    const cls = l.includes("[MCP") ? "mcp" : l.includes("[Gemini]") ? "gemini" : l.includes("[SM-2]") ? "sm2" : "info";
-    d.className = `log-entry ${cls}`;
-    d.textContent = `[${nowTime()}] ${l}`;
-    body.appendChild(d);
+// ── LOGS ──
+function appendLogs(logs){
+  if(!logs||!logs.length)return;
+  allLogs=allLogs.concat(logs);
+  const body=document.getElementById("log-body");
+  if(body.querySelector(".log-entry.info")?.textContent.includes("Waiting"))body.innerHTML="";
+  logs.forEach(l=>{
+    const d=document.createElement("div");
+    const cls=l.includes("[MCP")?"mcp":l.includes("[Gemini]")?"gemini":l.includes("[SM-2]")?"sm2":"info";
+    d.className=`log-entry ${cls}`;d.textContent=`[${nowTime()}] ${l}`;body.appendChild(d);
   });
-  body.scrollTop = body.scrollHeight;
+  body.scrollTop=body.scrollHeight;
 }
+function clearLogs(){allLogs=[];document.getElementById("log-body").innerHTML=`<div class="log-entry info">— Logs cleared —</div>`;}
 
-function clearLogs() {
-  allLogs = [];
-  document.getElementById("log-body").innerHTML = `<div class="log-entry info">— Logs cleared —</div>`;
-}
-
-// ─────────────────────────────────────────
-//  HEATMAP
-// ─────────────────────────────────────────
-function buildHeatmap() {
-  const hm  = document.getElementById("heatmap");
-  const lvl = [0,0,0,1,1,2,2,3,4];
-  for (let i = 0; i < 90; i++) {
-    const c = document.createElement("div");
-    c.className = "heat-cell";
-    const r = Math.random();
-    if (r > 0.38) {
-      const l = lvl[Math.floor(Math.random() * lvl.length)];
-      if (l > 0) c.classList.add("l" + l);
-    }
-    if (i > 76 && Math.random() > 0.3) {
-      c.className = "heat-cell l" + (Math.floor(Math.random()*3)+2);
-    }
+// ── HEATMAP ──
+function buildHeatmap(){
+  const hm=document.getElementById("heatmap");const lvl=[0,0,0,1,1,2,2,3,4];
+  for(let i=0;i<90;i++){
+    const c=document.createElement("div");c.className="heat-cell";
+    const r=Math.random();if(r>0.38){const l=lvl[Math.floor(Math.random()*lvl.length)];if(l>0)c.classList.add("l"+l);}
+    if(i>76&&Math.random()>0.3){c.className="heat-cell l"+(Math.floor(Math.random()*3)+2);}
     hm.appendChild(c);
   }
 }
 
-// ─────────────────────────────────────────
-//  TOAST
-// ─────────────────────────────────────────
-function showToast(msg, type = "info") {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className   = `toast ${type} show`;
-  setTimeout(() => t.className = "toast", 3500);
+// ── TOAST ──
+function showToast(msg,type="info"){
+  const t=document.getElementById("toast");t.textContent=msg;
+  t.className=`toast ${type} show`;setTimeout(()=>t.className="toast",3500);
 }
 
-// ─────────────────────────────────────────
-//  UTILS
-// ─────────────────────────────────────────
-function nowTime() {
-  return new Date().toLocaleTimeString("en-GB", {hour:"2-digit",minute:"2-digit"});
+// ── LOGOUT ──
+async function doLogout(){
+  await fetch(API+"/auth/logout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:TOKEN})}).catch(()=>{});
+  localStorage.clear();window.location.href="index.html";
 }
-function escHtml(t) {
-  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+
+function nowTime(){return new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});}
+function escHtml(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 </script>
 </body>
 </html>
