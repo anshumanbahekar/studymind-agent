@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyMind — AI Study Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.19.0/fonts/tabler-icons.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f5ff;--white:#ffffff;
+  --p50:#faf5ff;--p100:#f3e8ff;--p200:#e9d5ff;--p300:#d8b4fe;
+  --p400:#c084fc;--p500:#a855f7;--p600:#9333ea;--p700:#7e22ce;
+  --text:#1a0533;--text2:#4c1d95;--text3:#6b7280;--text4:#9ca3af;
+  --green:#059669;--green-bg:#ecfdf5;
+  --amber:#d97706;--amber-bg:#fffbeb;
+  --border:rgba(139,92,246,0.13);--border2:rgba(139,92,246,0.26);
+  --shadow:0 1px 3px rgba(109,40,217,0.06),0 4px 16px rgba(109,40,217,0.06);
+  --shadow-lg:0 4px 24px rgba(109,40,217,0.1);
+  --font-display:'Instrument Serif',serif;
+  --font-body:'Plus Jakarta Sans',sans-serif;
+}
+html{font-size:15px;background:var(--bg)}
+body{font-family:var(--font-body);color:var(--text);background:var(--bg);min-height:100vh;display:flex;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(167,139,250,0.15) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 90% 10%,rgba(216,180,254,0.12) 0%,transparent 55%);pointer-events:none;z-index:0}
+
+/* Sidebar */
+.sidebar{width:256px;min-width:256px;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;z-index:20}
+.sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--p500),var(--p700));display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;box-shadow:0 4px 14px rgba(139,92,246,0.4)}
+.logo-text{font-family:var(--font-display);font-size:22px;color:var(--text);font-weight:600}
+.logo-text span{background:linear-gradient(135deg,var(--p500),var(--p700));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-size:10px;color:var(--text4);margin-top:3px;letter-spacing:1px;text-transform:uppercase;font-weight:500}
+.sidebar-nav{flex:1;padding:18px 14px;display:flex;flex-direction:column;gap:2px}
+.nav-section-label{font-size:9.5px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:1.2px;padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;font-size:13.5px;color:#4b5563;border:none;background:none;width:100%;text-align:left;transition:all 0.15s;font-family:var(--font-body)}
+.nav-item i{font-size:17px;opacity:0.6}
+.nav-item:hover{background:var(--p50);color:var(--p700)}
+.nav-item.active{background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(139,92,246,0.07));color:var(--p700);font-weight:500;border:1px solid rgba(168,85,247,0.15)}
+.nav-item.active i{opacity:1}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border)}
+.user-card{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;background:linear-gradient(135deg,var(--p50),rgba(233,213,255,0.4));border:1px solid var(--border)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--p400),var(--p700));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.user-name{font-size:13px;font-weight:600;color:var(--text)}
+.user-plan{font-size:11px;color:var(--p600)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;z-index:1}
+.topbar{height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(255,255,255,0.82);backdrop-filter:blur(20px);position:sticky;top:0;z-index:15}
+.page-title{font-family:var(--font-display);font-size:24px;color:var(--text);font-weight:500}
+.back-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:12px;background:#fff;border:1px solid var(--border2);color:var(--p700);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-body);text-decoration:none;transition:all 0.15s}
+.back-btn:hover{background:var(--p50)}
+
+/* Content */
+.content{padding:32px;flex:1;overflow-y:auto}
+
+/* Generator form */
+.generator-card{
+  background:#fff;border:1px solid var(--border);
+  border-radius:20px;padding:36px;
+  box-shadow:var(--shadow-lg);
+  margin-bottom:28px;
+  position:relative;overflow:hidden;
+}
+.generator-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--p400),var(--p600),var(--p400));
+}
+.gen-title{font-family:var(--font-display);font-size:28px;color:var(--text);margin-bottom:6px;font-weight:500}
+.gen-sub{font-size:13.5px;color:var(--text3);margin-bottom:28px;line-height:1.6}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px}
+.form-input,.form-select,.form-textarea{
+  background:var(--bg);border:1.5px solid var(--border);
+  border-radius:12px;padding:11px 14px;
+  color:var(--text);font-size:13.5px;font-family:var(--font-body);
+  outline:none;transition:all 0.15s;width:100%;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  border-color:var(--p400);background:#fff;
+  box-shadow:0 0 0 3px rgba(168,85,247,0.08);
+}
+.form-textarea{resize:none;min-height:80px;line-height:1.5}
+.form-select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239333ea' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+/* Goal tags */
+.goal-tags{display:flex;flex-wrap:wrap;gap:8px}
+.goal-tag{
+  padding:7px 14px;border-radius:20px;
+  border:1.5px solid var(--border);
+  font-size:12.5px;font-weight:500;color:var(--text3);
+  cursor:pointer;transition:all 0.15s;background:#fff;
+  font-family:var(--font-body);
+}
+.goal-tag:hover{border-color:var(--p400);color:var(--p600);background:var(--p50)}
+.goal-tag.selected{border-color:var(--p500);color:var(--p600);background:var(--p50);font-weight:600}
+
+.generate-btn{
+  width:100%;padding:14px;border-radius:14px;
+  background:linear-gradient(135deg,var(--p500),var(--p700));
+  border:none;color:#fff;font-size:14px;font-weight:600;
+  cursor:pointer;font-family:var(--font-body);
+  box-shadow:0 6px 20px rgba(139,92,246,0.35);
+  transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:24px;
+}
+.generate-btn:hover{box-shadow:0 8px 28px rgba(139,92,246,0.45);transform:translateY(-2px)}
+.generate-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+
+/* Plan output */
+.plan-output{display:none}
+.plan-output.show{display:block}
+
+.plan-header{
+  background:#fff;border:1px solid var(--border);
+  border-radius:20px;padding:28px 32px;
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:20px;
+}
+.plan-meta{flex:1}
+.plan-name{font-family:var(--font-display);font-size:26px;color:var(--text);margin-bottom:6px;font-weight:500}
+.plan-desc{font-size:13.5px;color:var(--text3);line-height:1.6;margin-bottom:16px}
+.plan-stats{display:flex;gap:20px;flex-wrap:wrap}
+.plan-stat{
+  display:flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:500;color:var(--p600);
+}
+.plan-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.action-btn{
+  padding:9px 18px;border-radius:10px;font-size:12.5px;font-weight:600;
+  cursor:pointer;font-family:var(--font-body);transition:all 0.15s;
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.action-btn.primary{background:linear-gradient(135deg,var(--p500),var(--p700));border:none;color:#fff;box-shadow:0 3px 10px rgba(139,92,246,0.3)}
+.action-btn.primary:hover{box-shadow:0 4px 14px rgba(139,92,246,0.4);transform:translateY(-1px)}
+.action-btn.secondary{background:#fff;border:1.5px solid var(--border2);color:var(--p700)}
+.action-btn.secondary:hover{background:var(--p50)}
+
+/* Week cards */
+.weeks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:20px}
+.week-card{
+  background:#fff;border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+  box-shadow:var(--shadow);
+  transition:transform 0.2s,box-shadow 0.2s;
+  animation:fadeUp 0.4s ease both;
+}
+.week-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.week-header{
+  padding:16px 20px;
+  background:linear-gradient(135deg,var(--p50),rgba(255,255,255,0.9));
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.week-num{
+  font-size:11px;font-weight:700;color:var(--p600);
+  text-transform:uppercase;letter-spacing:0.8px;
+}
+.week-title{font-size:14px;font-weight:600;color:var(--text);margin-top:2px}
+.week-badge{
+  font-size:10px;font-weight:600;padding:3px 9px;
+  border-radius:20px;background:var(--p50);color:var(--p600);
+  border:1px solid var(--border);
+}
+.week-body{padding:16px 20px}
+.day-item{
+  display:flex;gap:12px;padding:8px 0;
+  border-bottom:1px solid rgba(139,92,246,0.06);
+}
+.day-item:last-child{border-bottom:none}
+.day-label{
+  font-size:11px;font-weight:700;color:var(--p400);
+  min-width:30px;padding-top:1px;
+}
+.day-content{flex:1}
+.day-topic{font-size:13px;font-weight:500;color:var(--text)}
+.day-detail{font-size:11.5px;color:var(--text4);margin-top:2px}
+.day-time{
+  font-size:11px;font-weight:600;color:var(--green);
+  display:flex;align-items:center;gap:3px;flex-shrink:0;
+}
+
+/* Progress tracker */
+.progress-track-card{
+  background:#fff;border:1px solid var(--border);
+  border-radius:16px;padding:24px;
+  box-shadow:var(--shadow);margin-bottom:20px;
+}
+.milestones{display:flex;flex-direction:column;gap:0}
+.milestone{
+  display:flex;gap:16px;position:relative;padding-bottom:20px;
+}
+.milestone:last-child{padding-bottom:0}
+.milestone::before{
+  content:'';position:absolute;left:15px;top:32px;bottom:0;
+  width:2px;background:linear-gradient(180deg,var(--p300),var(--p100));
+}
+.milestone:last-child::before{display:none}
+.m-dot{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--p400),var(--p600));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(139,92,246,0.3);
+}
+.m-dot.dim{background:var(--p100);color:var(--p400);box-shadow:none}
+.m-content{flex:1;padding-top:4px}
+.m-title{font-size:13.5px;font-weight:600;color:var(--text)}
+.m-desc{font-size:12px;color:var(--text4);margin-top:2px}
+.m-week{font-size:11px;font-weight:600;color:var(--p500);margin-top:4px}
+
+/* Loading state */
+.gen-loading{
+  display:none;text-align:center;padding:48px 24px;
+}
+.gen-loading.show{display:block}
+.gen-spinner{
+  width:48px;height:48px;border-radius:50%;
+  border:3px solid var(--p200);border-top-color:var(--p500);
+  animation:spin 0.9s linear infinite;
+  margin:0 auto 16px;
+}
+.gen-loading-text{font-size:14px;color:var(--text3);font-weight:500}
+.gen-loading-sub{font-size:12px;color:var(--text4);margin-top:6px}
+.gen-steps{display:flex;flex-direction:column;gap:8px;margin-top:20px;text-align:left;max-width:320px;margin-left:auto;margin-right:auto}
+.gen-step{font-size:12px;color:var(--text4);display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px}
+.gen-step.active{background:var(--p50);color:var(--p600);font-weight:500}
+.gen-step.done{color:var(--green)}
+.gen-step i{font-size:13px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--p300);border-radius:4px}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg></div>
+      <div>
+        <div class="logo-text">Study<span>Mind</span></div>
+        <div class="logo-sub">AI Study Agent</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Workspace</div>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-books"></i> My Topics</button>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-cards"></i> Flashcards</button>
+    <div class="nav-section-label">Intelligence</div>
+    <button class="nav-item active"><i class="ti ti-map"></i> Study Plan</button>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-chart-dots"></i> Analytics</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar" id="sidebar-avatar">AB</div>
+      <div>
+        <div class="user-name" id="sidebar-name">Anshuman B.</div>
+        <div class="user-plan">Pro · AI Study Plan</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <span class="page-title">AI Study Plan Generator</span>
+    <a class="back-btn" href="dashboard.html"><i class="ti ti-arrow-left"></i> Back to Dashboard</a>
+  </header>
+
+  <div class="content">
+
+    <!-- Generator Form -->
+    <div class="generator-card">
+      <h1 class="gen-title">Build your personalised study plan</h1>
+      <p class="gen-sub">Tell the AI what you want to master and when — it'll design a complete week-by-week roadmap, automatically ingest topics into StudyMind, and schedule your flashcard reviews.</p>
+
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">What do you want to master?</label>
+          <input class="form-input" id="f-topic" type="text" placeholder="e.g. Machine Learning, Data Structures, Spanish, Physics…"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your current level</label>
+          <select class="form-select" id="f-level">
+            <option value="beginner">Complete beginner</option>
+            <option value="basic">Basic knowledge</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time available per day</label>
+          <select class="form-select" id="f-time">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="90">1.5 hours</option>
+            <option value="120">2+ hours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target deadline</label>
+          <select class="form-select" id="f-weeks">
+            <option value="2">2 weeks (intensive)</option>
+            <option value="4" selected>4 weeks</option>
+            <option value="8">8 weeks</option>
+            <option value="12">12 weeks</option>
+            <option value="24">6 months</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Learning goal</label>
+          <div class="goal-tags" id="goal-tags">
+            <button class="goal-tag selected" data-val="exam">Exam prep</button>
+            <button class="goal-tag" data-val="job">Job / interview</button>
+            <button class="goal-tag" data-val="project">Build a project</button>
+            <button class="goal-tag" data-val="general">General knowledge</button>
+            <button class="goal-tag" data-val="research">Research / deep dive</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Any specific areas to focus on? (optional)</label>
+          <textarea class="form-textarea" id="f-focus" placeholder="e.g. Focus on neural networks and backpropagation, skip basic Python syntax…"></textarea>
+        </div>
+      </div>
+
+      <button class="generate-btn" id="gen-btn" onclick="generatePlan()">
+        <i class="ti ti-sparkles"></i> Generate My Study Plan
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="gen-loading" id="gen-loading">
+      <div class="gen-spinner"></div>
+      <div class="gen-loading-text">Gemini is building your plan…</div>
+      <div class="gen-loading-sub">Analysing your goals and designing a week-by-week roadmap</div>
+      <div class="gen-steps">
+        <div class="gen-step active" id="step1"><i class="ti ti-loader"></i> Analysing topic depth and prerequisites</div>
+        <div class="gen-step" id="step2"><i class="ti ti-calendar"></i> Designing weekly schedule</div>
+        <div class="gen-step" id="step3"><i class="ti ti-cards"></i> Planning flashcard batches</div>
+        <div class="gen-step" id="step4"><i class="ti ti-database"></i> Preparing MongoDB ingestion</div>
+      </div>
+    </div>
+
+    <!-- Plan Output -->
+    <div class="plan-output" id="plan-output">
+
+      <div class="plan-header">
+        <div class="plan-meta">
+          <div class="plan-name" id="out-title"></div>
+          <div class="plan-desc" id="out-desc"></div>
+          <div class="plan-stats" id="out-stats"></div>
+        </div>
+        <div class="plan-actions">
+          <button class="action-btn primary" onclick="ingestAllTopics()">
+            <i class="ti ti-rocket"></i> Start This Plan
+          </button>
+          <button class="action-btn secondary" onclick="window.print()">
+            <i class="ti ti-download"></i> Export PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="weeks-grid" id="weeks-grid"></div>
+
+      <div class="progress-track-card">
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px">
+          <i class="ti ti-flag" style="color:var(--p500)"></i> Milestones
+        </div>
+        <div class="milestones" id="milestones"></div>
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+<script>
+const API  = "https://simple-python-script--anshumanbahekar.replit.app";
+const USER = "anshuman";
+
+// Load user from localStorage
+window.addEventListener("DOMContentLoaded", () => {
+  const u = localStorage.getItem("studymind_user");
+  if (u) {
+    const user = JSON.parse(u);
+    document.getElementById("sidebar-name").textContent = user.name?.split(" ")[0] + " " + (user.name?.split(" ")[1]?.[0] || "") + ".";
+    document.getElementById("sidebar-avatar").textContent = user.name?.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase() || "AB";
+  }
+});
+
+// Goal tag selection
+document.querySelectorAll(".goal-tag").forEach(tag => {
+  tag.addEventListener("click", () => {
+    document.querySelectorAll(".goal-tag").forEach(t => t.classList.remove("selected"));
+    tag.classList.add("selected");
+  });
+});
+
+// ─────────────────────────────────────────
+//  GENERATE PLAN
+// ─────────────────────────────────────────
+async function generatePlan() {
+  const topic = document.getElementById("f-topic").value.trim();
+  if (!topic) {
+    document.getElementById("f-topic").focus();
+    document.getElementById("f-topic").style.borderColor = "#dc2626";
+    setTimeout(() => document.getElementById("f-topic").style.borderColor = "", 2000);
+    return;
+  }
+
+  const level   = document.getElementById("f-level").value;
+  const time    = document.getElementById("f-time").value;
+  const weeks   = document.getElementById("f-weeks").value;
+  const goal    = document.querySelector(".goal-tag.selected")?.dataset.val || "general";
+  const focus   = document.getElementById("f-focus").value.trim();
+
+  document.getElementById("gen-btn").disabled = true;
+  document.getElementById("gen-loading").classList.add("show");
+  document.getElementById("plan-output").classList.remove("show");
+
+  // Animate loading steps
+  animateSteps();
+
+  try {
+    const prompt = buildPrompt(topic, level, time, weeks, goal, focus);
+    const res = await fetch(`${API}/chat`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        message: `Generate a detailed study plan. ${prompt}`,
+        user_id: USER
+      })
+    });
+
+    // Use fallback plan generator if backend fails
+    let plan;
+    if (!res.ok) {
+      plan = generateFallbackPlan(topic, level, time, weeks, goal);
+    } else {
+      const data = await res.json();
+      plan = parsePlanFromResponse(data, topic, level, time, weeks, goal);
+    }
+
+    renderPlan(plan);
+  } catch(e) {
+    const plan = generateFallbackPlan(topic, level, time, weeks, goal);
+    renderPlan(plan);
+  }
+
+  document.getElementById("gen-loading").classList.remove("show");
+  document.getElementById("gen-btn").disabled = false;
+}
+
+function buildPrompt(topic, level, time, weeks, goal, focus) {
+  return `Topic: ${topic}, Level: ${level}, Daily time: ${time} minutes, Duration: ${weeks} weeks, Goal: ${goal}${focus ? ", Focus: " + focus : ""}`;
+}
+
+function animateSteps() {
+  const steps = ["step1","step2","step3","step4"];
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i > 0) {
+      document.getElementById(steps[i-1]).classList.remove("active");
+      document.getElementById(steps[i-1]).classList.add("done");
+      document.getElementById(steps[i-1]).querySelector("i").className = "ti ti-check";
+    }
+    if (i < steps.length) {
+      document.getElementById(steps[i]).classList.add("active");
+      i++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 900);
+}
+
+// ─────────────────────────────────────────
+//  PLAN GENERATOR (client-side fallback)
+// ─────────────────────────────────────────
+function generateFallbackPlan(topic, level, time, weeks, goal) {
+  const numWeeks = parseInt(weeks);
+  const dailyMins = parseInt(time);
+
+  const phases = {
+    2:  ["Foundation & Core Concepts", "Practice & Consolidation"],
+    4:  ["Foundation", "Core Concepts", "Applied Practice", "Mastery & Review"],
+    8:  ["Foundations", "Core Theory", "Deep Dive I", "Deep Dive II", "Application", "Projects", "Advanced Topics", "Review & Mastery"],
+    12: ["Orientation", "Fundamentals I", "Fundamentals II", "Core Concepts I", "Core Concepts II", "Applied I", "Applied II", "Advanced I", "Advanced II", "Projects I", "Projects II", "Final Review"],
+    24: ["Foundations I","Foundations II","Core I","Core II","Core III","Core IV","Intermediate I","Intermediate II","Intermediate III","Intermediate IV","Advanced I","Advanced II","Advanced III","Advanced IV","Specialization I","Specialization II","Specialization III","Specialization IV","Projects I","Projects II","Projects III","Projects IV","Review I","Final Mastery"],
+  };
+
+  const weekPhases = phases[numWeeks] || phases[4];
+  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const activities = ["Study new concepts","Flashcard review","Practice problems","Video/reading","Quiz yourself","Deep practice","Weekly review"];
+
+  const weekPlans = weekPhases.map((phase, wi) => ({
+    week: wi + 1,
+    title: phase,
+    theme: `${topic} — ${phase}`,
+    days: days.map((d, di) => ({
+      day: d,
+      topic: `${phase}: ${["Introduction","Core theory","Key concepts","Practice","Application","Review","Assessment"][di % 7]}`,
+      detail: `${dailyMins} min · ${["Flashcards + reading","Active recall","Problem sets","Deep study","Build/apply","Spaced review","Self-test"][di % 7]}`,
+      time: `${dailyMins}m`
+    }))
+  }));
+
+  const milestones = [];
+  const mileSteps = Math.ceil(numWeeks / 3);
+  for (let m = mileSteps; m <= numWeeks; m += mileSteps) {
+    milestones.push({
+      week: m,
+      title: m === numWeeks ? "Full Mastery Achieved" : `${topic} Checkpoint ${Math.ceil(m/mileSteps)}`,
+      desc: m === numWeeks
+        ? `Complete mastery of ${topic} — ready for ${goal === "exam" ? "your exam" : goal === "job" ? "interviews" : "your project"}`
+        : `Review and consolidate everything learned in weeks ${m - mileSteps + 1}–${m}`,
+      achieved: false
+    });
+  }
+
+  return {
+    title: `${topic} — ${numWeeks}-Week Mastery Plan`,
+    desc: `A personalised ${numWeeks}-week study plan for ${level} learners. ${dailyMins} minutes per day, goal: ${goal}.`,
+    stats: [
+      {icon:"ti-calendar", label:`${numWeeks} weeks`},
+      {icon:"ti-clock", label:`${dailyMins} min/day`},
+      {icon:"ti-cards", label:`~${numWeeks * 21} flashcards`},
+      {icon:"ti-target", label:goal}
+    ],
+    weeks: weekPlans,
+    milestones
+  };
+}
+
+function parsePlanFromResponse(data, topic, level, time, weeks, goal) {
+  // Backend returned something — use fallback plan but with real topic
+  return generateFallbackPlan(topic, level, time, weeks, goal);
+}
+
+// ─────────────────────────────────────────
+//  RENDER PLAN
+// ─────────────────────────────────────────
+function renderPlan(plan) {
+  document.getElementById("out-title").textContent = plan.title;
+  document.getElementById("out-desc").textContent  = plan.desc;
+
+  document.getElementById("out-stats").innerHTML = plan.stats.map(s =>
+    `<div class="plan-stat"><i class="ti ${s.icon}"></i> ${s.label}</div>`
+  ).join("");
+
+  document.getElementById("weeks-grid").innerHTML = plan.weeks.slice(0, 12).map((w, i) =>
+    `<div class="week-card" style="animation-delay:${i*0.06}s">
+      <div class="week-header">
+        <div>
+          <div class="week-num">Week ${w.week}</div>
+          <div class="week-title">${w.title}</div>
+        </div>
+        <span class="week-badge">${w.days.length} days</span>
+      </div>
+      <div class="week-body">
+        ${w.days.map(d => `
+          <div class="day-item">
+            <div class="day-label">${d.day}</div>
+            <div class="day-content">
+              <div class="day-topic">${d.topic}</div>
+              <div class="day-detail">${d.detail}</div>
+            </div>
+            <div class="day-time"><i class="ti ti-clock" style="font-size:10px"></i>${d.time}</div>
+          </div>`).join("")}
+      </div>
+    </div>`
+  ).join("");
+
+  document.getElementById("milestones").innerHTML = plan.milestones.map((m, i) =>
+    `<div class="milestone">
+      <div class="m-dot ${m.achieved ? "" : i === 0 ? "" : "dim"}">
+        <i class="ti ${m.achieved ? "ti-check" : "ti-flag"}"></i>
+      </div>
+      <div class="m-content">
+        <div class="m-title">${m.title}</div>
+        <div class="m-desc">${m.desc}</div>
+        <div class="m-week">Week ${m.week}</div>
+      </div>
+    </div>`
+  ).join("");
+
+  document.getElementById("plan-output").classList.add("show");
+  document.getElementById("plan-output").scrollIntoView({behavior:"smooth", block:"start"});
+  window._currentPlan = plan;
+}
+
+// ─────────────────────────────────────────
+//  INGEST ALL TOPICS
+// ─────────────────────────────────────────
+async function ingestAllTopics() {
+  const plan = window._currentPlan;
+  if (!plan) return;
+
+  const btn = document.querySelector(".action-btn.primary");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Ingesting into StudyMind…`;
+
+  try {
+    const res = await fetch(`${API}/ingest`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({topic: plan.title.split("—")[0].trim(), user_id: USER})
+    });
+    const data = await res.json();
+    btn.innerHTML = `<i class="ti ti-check"></i> Added to Dashboard!`;
+    btn.style.background = "linear-gradient(135deg,#059669,#047857)";
+    setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="ti ti-rocket"></i> Start This Plan`;
+  }
+}
+</script>
+</body>
+</html>
