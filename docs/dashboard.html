@@ -656,6 +656,16 @@ async function loadNextCard(){
     document.getElementById("q-diff").textContent=data.difficulty||"medium";
     document.getElementById("q-diff").className=`quiz-diff ${data.difficulty||"medium"}`;
     document.getElementById("q-submit").disabled=false;
+    // Show/hide answer textarea based on card type
+    const answerArea = document.getElementById("q-answer");
+    if(data.card_type==="mcq"){
+      answerArea.placeholder="Type A, B, C, or D — or write your full answer";
+    } else if(data.card_type==="fill_blank"){
+      answerArea.placeholder="Fill in the blank…";
+    } else {
+      answerArea.placeholder="Type your answer here…";
+    }
+    answerArea.value="";
     document.getElementById("quiz-content").style.display="block";
     appendLogs([`[MCP mongodb_find] Fetched card: "${(data.question||"").slice(0,60)}…"`]);
   }catch(e){
@@ -679,9 +689,15 @@ async function submitAnswer(){
     document.getElementById("q-next-info").textContent=`Next review: ${data.next_review||"tomorrow"} · Confidence: ${Math.round((data.confidence||0)*100)}% · Interval: ${data.interval_days||1}d`;
     document.getElementById("q-submit").textContent="Submit Answer";
     if(data.logs)appendLogs(data.logs);
+    // Auto advance after 3 seconds
+    setTimeout(()=>{
+      document.getElementById("q-result").className="quiz-result";
+      loadNextCard();
+    }, 3000);
   }catch(e){
     document.getElementById("q-submit").disabled=false;
     document.getElementById("q-submit").textContent="Submit Answer";
+    console.log("Submit error:", e);
   }
 }
 
