@@ -761,6 +761,7 @@ async function submitAnswer(){
     // Cache indicator
     const cacheNote = data.from_cache?" · ⚡ from cache":"";
     document.getElementById("q-next-info").textContent=`Next: ${data.next_review||"tomorrow"} · Confidence: ${Math.round((data.confidence||0)*100)}%${cacheNote}`;
+    // User reads at their own pace — click Next Card when ready
     document.getElementById("q-submit").textContent="Submit Answer";
     if(data.logs)appendLogs(data.logs);
     // Auto advance after 3 seconds
