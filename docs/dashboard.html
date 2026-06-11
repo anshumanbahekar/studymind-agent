@@ -530,6 +530,9 @@ let currentCard = null;
 let allLogs = [];
 let currentTopic = "";
 let currentMode = "explain";
+let sessionCards = 0;
+let sessionCorrect = 0;
+let sessionTopics = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
@@ -599,7 +602,7 @@ function renderTopics(topics){
     const pct=Math.round(t.mastery||0);
     const barColor=pct>=70?"var(--green)":pct>=40?"var(--p500)":"var(--amber)";
     const pctColor=pct>=70?"var(--green)":pct>=40?"var(--p600)":"var(--amber)";
-    return`<div class="topic-item" onclick="startTopicQuiz('${t.topic_id}')">
+    return`<div class="topic-item" onclick="location.href='topic.html?id=${t.topic_id}&title='+encodeURIComponent('${t.title}')">
       <div class="topic-dot" style="background:${c.bg};color:${c.color}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
       <div class="topic-info"><div class="topic-name">${t.title}</div><div class="topic-meta">${t.total_cards||0} cards · MongoDB Atlas</div></div>
       <div class="topic-right"><div class="mastery-pct" style="color:${pctColor}">${pct}%</div><div class="mastery-bar"><div class="mastery-fill" style="width:${pct}%;background:${barColor}"></div></div></div>
@@ -688,7 +691,18 @@ async function openQuizModal(topicId){
   document.getElementById("quiz-done").style.display="none";
   await loadNextCard();
 }
-function closeQuizModal(){document.getElementById("quiz-modal").classList.remove("open");refreshAll();}
+function closeQuizModal(){
+  document.getElementById("quiz-modal").classList.remove("open");
+  // Record session to MongoDB
+  if(sessionCards > 0){
+    fetch(`${API}/session/record`,{method:"POST",headers:authHeaders(),
+      body:JSON.stringify({user_id:USER,token:TOKEN,cards_attempted:sessionCards,
+        cards_correct:sessionCorrect,topic_ids:[...new Set(sessionTopics)]})
+    }).catch(()=>{});
+    sessionCards=0; sessionCorrect=0; sessionTopics=[];
+  }
+  refreshAll();
+}
 
 async function loadNextCard(){
   document.getElementById("quiz-loading").style.display="block";
@@ -764,6 +778,9 @@ async function submitAnswer(){
     // User reads at their own pace — click Next Card when ready
     document.getElementById("q-submit").textContent="Submit Answer";
     if(data.logs)appendLogs(data.logs);
+    sessionCards++;
+    if(data.correct) sessionCorrect++;
+    if(currentCard?.topic_id) sessionTopics.push(currentCard.topic_id);
 
   }catch(e){
     document.getElementById("q-submit").disabled=false;
