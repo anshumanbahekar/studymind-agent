@@ -88,8 +88,8 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
   <div id="form-login">
     <div class="headline">Welcome <em>back.</em></div>
     <div class="subline">Your flashcards and progress are waiting.</div>
-    <div class="field"><label>Username</label><input id="l-username" type="text" placeholder="your_username" autocomplete="username"/></div>
-    <div class="field"><label>Password</label><input id="l-password" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+    <div class="field"><label>Username</label><input id="l-username" type="text" placeholder="Enter your username" autocomplete="username"/></div>
+    <div class="field"><label>Password</label><input id="l-password" type="password" placeholder="Enter your password" autocomplete="current-password"/></div>
     <button class="submit-btn" id="login-btn" onclick="doLogin()">
       <div class="spinner" id="login-spinner"></div>
       <span id="login-btn-text">Sign In</span>
@@ -99,10 +99,10 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
 
   <div id="form-register" style="display:none">
     <div class="headline">Start <em>learning.</em></div>
-    <div class="subline">Your data syncs across all devices via MongoDB Atlas.</div>
-    <div class="field"><label>Display Name</label><input id="r-name" type="text" placeholder="Anshuman Bahekar"/></div>
-    <div class="field"><label>Username</label><input id="r-username" type="text" placeholder="anshuman_b" autocomplete="username"/></div>
-    <div class="field"><label>Password</label><input id="r-password" type="password" placeholder="Min 6 characters" autocomplete="new-password"/></div>
+    <div class="subline">Your progress syncs across all your devices.</div>
+    <div class="field"><label>Display Name</label><input id="r-name" type="text" placeholder="Your full name"/></div>
+    <div class="field"><label>Username</label><input id="r-username" type="text" placeholder="Choose a username" autocomplete="username"/></div>
+    <div class="field"><label>Password</label><input id="r-password" type="password" placeholder="Create a password" autocomplete="new-password"/></div>
     <button class="submit-btn" id="register-btn" onclick="doRegister()">
       <div class="spinner" id="register-spinner"></div>
       <span id="register-btn-text">Create Account</span>
@@ -111,29 +111,7 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
     <div class="success-msg" id="register-success"></div>
   </div>
 
-  <!-- Feature pills -->
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      AI Teaching Agent
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      SM-2 Spaced Repetition
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      MongoDB Atlas Sync
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      Knowledge Graph
-    </div>
-  </div>
 
-  <div style="font-size:11px;color:var(--text4);text-align:center;margin-top:16px">
-    Powered by Gemini · MongoDB Atlas · StudyMind v3.0
-  </div>
 </div>
 
 <script>
