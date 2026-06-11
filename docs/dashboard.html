@@ -535,7 +535,6 @@ let sessionCorrect = 0;
 let sessionTopics = [];
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
   const nameEl = document.getElementById("sidebar-name");
   if(nameEl) nameEl.textContent = DNAME;
   const avatarEl = document.querySelector(".user-avatar");
