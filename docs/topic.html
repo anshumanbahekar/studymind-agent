@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyMind — Topic Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f5ff;--white:#fff;
+  --p50:#faf5ff;--p100:#f3e8ff;--p200:#e9d5ff;--p300:#d8b4fe;
+  --p400:#c084fc;--p500:#a855f7;--p600:#9333ea;--p700:#7e22ce;
+  --text:#1a0533;--text2:#4c1d95;--text3:#6b7280;--text4:#9ca3af;
+  --green:#059669;--green-bg:#ecfdf5;
+  --amber:#d97706;--amber-bg:#fffbeb;
+  --red:#dc2626;--red-bg:#fef2f2;
+  --border:rgba(139,92,246,0.13);--border2:rgba(139,92,246,0.26);
+  --shadow:0 1px 3px rgba(109,40,217,0.06),0 4px 16px rgba(109,40,217,0.06);
+  --shadow-lg:0 4px 24px rgba(109,40,217,0.1);
+  --font-display:'Instrument Serif',serif;
+  --font-body:'Plus Jakarta Sans',sans-serif;
+}
+html{font-size:15px;background:var(--bg)}
+body{font-family:var(--font-body);color:var(--text);background:var(--bg);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(167,139,250,0.15) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 90% 10%,rgba(216,180,254,0.12) 0%,transparent 55%);pointer-events:none;z-index:0}
+
+.topbar{height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(255,255,255,0.82);backdrop-filter:blur(20px);position:sticky;top:0;z-index:15}
+.back-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:12px;border:1px solid var(--border2);background:#fff;color:var(--p700);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-body);text-decoration:none;transition:all 0.15s}
+.back-btn:hover{background:var(--p50)}
+.quiz-btn{padding:9px 20px;border-radius:12px;background:linear-gradient(135deg,var(--p500),var(--p700));border:none;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);box-shadow:0 4px 14px rgba(139,92,246,0.3);transition:all 0.2s}
+.quiz-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(139,92,246,0.4)}
+
+.content{padding:36px 32px;max-width:900px;margin:0 auto;position:relative;z-index:1}
+
+/* Hero */
+.topic-hero{background:#fff;border:1px solid var(--border);border-radius:20px;padding:32px;margin-bottom:24px;box-shadow:var(--shadow);display:flex;align-items:flex-start;justify-content:space-between;gap:24px;position:relative;overflow:hidden}
+.topic-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--p400),var(--p600),var(--p400))}
+.topic-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--p500),var(--p700));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(139,92,246,0.35)}
+.topic-info{flex:1}
+.topic-name{font-family:var(--font-display);font-size:28px;font-weight:500;color:var(--text);margin-bottom:6px}
+.topic-desc{font-size:13.5px;color:var(--text3);line-height:1.6;margin-bottom:16px}
+.topic-stats{display:flex;gap:20px;flex-wrap:wrap}
+.topic-stat{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--text3)}
+.topic-stat span{color:var(--p600);font-weight:700}
+
+/* Mastery ring */
+.mastery-ring{width:100px;height:100px;flex-shrink:0;position:relative}
+.mastery-ring svg{transform:rotate(-90deg)}
+.mastery-ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.mastery-pct{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--p600)}
+.mastery-lbl{font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:0.5px}
+
+/* Concepts */
+.concepts-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+.concept-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 24px;box-shadow:var(--shadow);transition:all 0.2s;cursor:pointer;display:flex;align-items:center;gap:16px}
+.concept-card:hover{border-color:var(--border2);transform:translateX(3px);box-shadow:var(--shadow-lg)}
+.concept-num{width:32px;height:32px;border-radius:10px;background:var(--p50);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--p600);flex-shrink:0}
+.concept-info{flex:1;min-width:0}
+.concept-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.concept-summary{font-size:12px;color:var(--text4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.concept-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.concept-mastery{font-size:13px;font-weight:700}
+.concept-bar{width:80px;height:5px;background:var(--p100);border-radius:5px;overflow:hidden}
+.concept-fill{height:100%;border-radius:5px;transition:width 0.8s ease}
+.depth-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.depth-1{background:var(--green-bg);color:var(--green)}
+.depth-2{background:var(--amber-bg);color:var(--amber)}
+.depth-3{background:var(--red-bg);color:var(--red)}
+
+/* Flashcard preview */
+.cards-section{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.cards-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,var(--p50),rgba(255,255,255,0.95))}
+.cards-header-title{font-size:14px;font-weight:600;color:var(--text)}
+.cards-list{max-height:400px;overflow-y:auto}
+.card-row{display:flex;align-items:flex-start;gap:14px;padding:14px 24px;border-bottom:1px solid rgba(139,92,246,0.06);transition:background 0.15s}
+.card-row:last-child{border-bottom:none}
+.card-row:hover{background:var(--p50)}
+.card-type-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.card-q{flex:1;font-size:13px;color:var(--text);line-height:1.5}
+.card-conf{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;flex-shrink:0}
+
+/* Loading */
+.loading{text-align:center;padding:60px;color:var(--text4)}
+.spinner{width:40px;height:40px;border-radius:50%;border:3px solid var(--p200);border-top-color:var(--p500);animation:spin 0.9s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.animate{animation:fadeUp 0.4s ease both}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-btn" href="dashboard.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Dashboard
+  </a>
+  <div id="topbar-title" style="font-family:var(--font-display);font-size:20px;font-weight:500;color:var(--text)">Topic Detail</div>
+  <button class="quiz-btn" onclick="startQuiz()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:6px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Quiz This Topic
+  </button>
+</div>
+
+<div class="content">
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    Loading topic data from MongoDB…
+  </div>
+  <div id="main-content" style="display:none"></div>
+</div>
+
+<script>
+const API   = "https://simple-python-script--anshumanbahekar.replit.app";
+const TOKEN = localStorage.getItem("sm_token") || "";
+const USER  = localStorage.getItem("sm_user_id") || "guest";
+if(!TOKEN) window.location.href = "index.html";
+
+function authHeaders(){ return {"Content-Type":"application/json","Authorization":"Bearer "+TOKEN}; }
+
+const params  = new URLSearchParams(location.search);
+const TOPIC_ID    = params.get("id") || "";
+const TOPIC_TITLE = decodeURIComponent(params.get("title") || "Topic");
+
+document.getElementById("topbar-title").textContent = TOPIC_TITLE;
+
+function startQuiz(){
+  localStorage.setItem("quiz_topic_id", TOPIC_ID);
+  localStorage.setItem("quiz_topic_title", TOPIC_TITLE);
+  window.location.href = "dashboard.html?quiz=" + TOPIC_ID;
+}
+
+async function loadTopic(){
+  try{
+    // Load progress for mastery data
+    const res = await fetch(`${API}/progress?user_id=${USER}&token=${TOKEN}`, {headers: authHeaders()});
+    const data = await res.json();
+
+    const topic = (data.topics||[]).find(t=>t.topic_id===TOPIC_ID) || {title:TOPIC_TITLE,mastery:0,total_cards:0};
+    const weak  = (data.weak_areas||[]).filter(w=>w.topic===TOPIC_TITLE);
+
+    // Load flashcards for this topic
+    const cardsRes = await fetch(`${API}/topic/cards`, {
+      method:"POST", headers:authHeaders(),
+      body:JSON.stringify({topic_id:TOPIC_ID,user_id:USER,token:TOKEN})
+    });
+    const cardsData = await cardsRes.json().catch(()=>({cards:[]}));
+    const cards = cardsData.cards || [];
+
+    render(topic, weak, cards, data);
+  }catch(e){
+    document.getElementById("loading").innerHTML = `<div style="color:var(--red)">Failed to load. <a href="dashboard.html" style="color:var(--p600)">Go back</a></div>`;
+  }
+}
+
+function render(topic, weak, cards, allData){
+  document.getElementById("loading").style.display = "none";
+  const main = document.getElementById("main-content");
+  main.style.display = "block";
+
+  const mastery = Math.round(topic.mastery||0);
+  const color   = mastery>=70?"var(--green)":mastery>=40?"var(--p500)":"var(--amber)";
+  const circumference = 2*Math.PI*40;
+  const dashOffset = circumference - (mastery/100)*circumference;
+
+  // Group cards by concept (use question prefix as proxy)
+  const conceptMap = {};
+  cards.forEach(c => {
+    const key = c.concept_id || "general";
+    if(!conceptMap[key]) conceptMap[key] = {title: c.concept_title||"General", cards:[], mastery:0, depth:1};
+    conceptMap[key].cards.push(c);
+  });
+
+  // Compute mastery per concept
+  Object.values(conceptMap).forEach(cm => {
+    const avgConf = cm.cards.reduce((s,c)=>s+(c.confidence_score||0),0)/Math.max(1,cm.cards.length);
+    cm.mastery = Math.round(avgConf*100);
+  });
+
+  const concepts = Object.values(conceptMap).sort((a,b)=>a.mastery-b.mastery);
+
+  // Build HTML
+  main.innerHTML = `
+  <div class="topic-hero animate">
+    <div style="display:flex;gap:20px;align-items:flex-start;flex:1;min-width:0">
+      <div class="topic-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>
+      </div>
+      <div class="topic-info">
+        <div class="topic-name">${TOPIC_TITLE}</div>
+        <div class="topic-desc">Your personalised study breakdown — powered by MongoDB Atlas + Gemini</div>
+        <div class="topic-stats">
+          <div class="topic-stat"><span>${topic.total_cards||cards.length}</span> flashcards</div>
+          <div class="topic-stat"><span>${concepts.length}</span> concepts</div>
+          <div class="topic-stat"><span>${weak.length}</span> weak areas</div>
+          <div class="topic-stat"><span>${topic.reviewed||0}</span> reviewed</div>
+        </div>
+      </div>
+    </div>
+    <div class="mastery-ring">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--p100)" stroke-width="8"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="8"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+          stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+      </svg>
+      <div class="mastery-ring-text">
+        <div class="mastery-pct" style="color:${color}">${mastery}%</div>
+        <div class="mastery-lbl">mastery</div>
+      </div>
+    </div>
+  </div>
+
+  ${concepts.length ? `
+  <div style="font-family:var(--font-display);font-size:20px;font-weight:500;color:var(--text);margin-bottom:16px;margin-top:4px">Concept Breakdown</div>
+  <div class="concepts-grid animate" style="animation-delay:0.1s">
+    ${concepts.map((c,i)=>{
+      const cm = c.mastery;
+      const cc = cm>=70?"var(--green)":cm>=40?"var(--p500)":"var(--amber)";
+      const depthLabel = c.depth<=1?"Foundational":c.depth===2?"Intermediate":"Advanced";
+      const depthClass = c.depth<=1?"depth-1":c.depth===2?"depth-2":"depth-3";
+      return `
+      <div class="concept-card">
+        <div class="concept-num">${i+1}</div>
+        <div class="concept-info">
+          <div class="concept-title">${c.title}</div>
+          <div class="concept-summary">${c.cards.length} cards · ${cm>=70?"Strong":"Needs practice"}</div>
+        </div>
+        <div class="concept-right">
+          <div class="concept-mastery" style="color:${cc}">${cm}%</div>
+          <div class="concept-bar"><div class="concept-fill" style="width:${cm}%;background:${cc}"></div></div>
+          <span class="depth-badge ${depthClass}">${depthLabel}</span>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>` : `<div style="text-align:center;padding:32px;color:var(--text4);font-size:13.5px">No concept data yet — start quizzing to build your breakdown.</div>`}
+
+  ${cards.length ? `
+  <div style="font-family:var(--font-display);font-size:20px;font-weight:500;color:var(--text);margin-bottom:16px;margin-top:28px">All Flashcards</div>
+  <div class="cards-section animate" style="animation-delay:0.2s">
+    <div class="cards-header">
+      <div class="cards-header-title">${cards.length} cards</div>
+      <div style="font-size:12px;color:var(--text4)">Sorted by confidence · lowest first</div>
+    </div>
+    <div class="cards-list">
+      ${[...cards].sort((a,b)=>(a.confidence_score||0)-(b.confidence_score||0)).map(c=>{
+        const conf = Math.round((c.confidence_score||0)*100);
+        const dotColor = conf>=70?"var(--green)":conf>=40?"var(--amber)":"var(--red)";
+        const confBg = conf>=70?"var(--green-bg)":conf>=40?"var(--amber-bg)":"var(--red-bg)";
+        return `
+        <div class="card-row">
+          <div class="card-type-dot" style="background:${dotColor}"></div>
+          <div class="card-q">${c.question}</div>
+          <div class="card-conf" style="background:${confBg};color:${dotColor}">${conf}%</div>
+        </div>`;
+      }).join("")}
+    </div>
+  </div>` : ""}
+  `;
+}
+
+loadTopic();
+</script>
+</body>
+</html>
