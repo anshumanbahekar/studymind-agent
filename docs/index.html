@@ -85,10 +85,9 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
     <button class="tab" id="tab-register" onclick="switchTab('register')">Create Account</button>
   </div>
 
-  <!-- LOGIN FORM -->
   <div id="form-login">
     <div class="headline">Welcome <em>back.</em></div>
-    <div class="subline">Sign in to continue your learning journey.</div>
+    <div class="subline">Your flashcards and progress are waiting.</div>
     <div class="field"><label>Username</label><input id="l-username" type="text" placeholder="your_username" autocomplete="username"/></div>
     <div class="field"><label>Password</label><input id="l-password" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
     <button class="submit-btn" id="login-btn" onclick="doLogin()">
@@ -98,10 +97,9 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
     <div class="error-msg" id="login-error"></div>
   </div>
 
-  <!-- REGISTER FORM -->
   <div id="form-register" style="display:none">
     <div class="headline">Start <em>learning.</em></div>
-    <div class="subline">Create your account — data syncs across all devices via MongoDB.</div>
+    <div class="subline">Your data syncs across all devices via MongoDB Atlas.</div>
     <div class="field"><label>Display Name</label><input id="r-name" type="text" placeholder="Anshuman Bahekar"/></div>
     <div class="field"><label>Username</label><input id="r-username" type="text" placeholder="anshuman_b" autocomplete="username"/></div>
     <div class="field"><label>Password</label><input id="r-password" type="password" placeholder="Min 6 characters" autocomplete="new-password"/></div>
@@ -113,19 +111,28 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
     <div class="success-msg" id="register-success"></div>
   </div>
 
-  <div class="features">
-    <div class="feat">
-      <div class="feat-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-      Your flashcards sync across all devices via MongoDB Atlas
+  <!-- Feature pills -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      AI Teaching Agent
     </div>
-    <div class="feat">
-      <div class="feat-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-      Sessions secured with hashed passwords + MongoDB sessions
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      SM-2 Spaced Repetition
     </div>
-    <div class="feat">
-      <div class="feat-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-      AI-powered study plans, quizzes and progress tracking
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      MongoDB Atlas Sync
     </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--p50);border:1px solid var(--border);font-size:11.5px;color:var(--p700);font-weight:500">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Knowledge Graph
+    </div>
+  </div>
+
+  <div style="font-size:11px;color:var(--text4);text-align:center;margin-top:16px">
+    Powered by Gemini · MongoDB Atlas · StudyMind v3.0
   </div>
 </div>
 
