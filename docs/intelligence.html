@@ -336,6 +336,7 @@ body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;backg
     <button class="nav-tab active" onclick="showView('graph')">Knowledge Graph</button>
     <button class="nav-tab" onclick="showView('exam')">AI Exam</button>
     <button class="nav-tab" onclick="showView('weak')">Weak Areas</button>
+    <button class="nav-tab" onclick="showView('dna')">Study DNA</button>
   </div>
   <a class="nav-back" href="dashboard.html">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -511,6 +512,57 @@ body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;backg
     </div>
   </div>
 
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- STUDY DNA -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="view" id="view-dna">
+    <div class="section-head">
+      <div class="section-eyebrow">Personalisation Engine</div>
+      <h1 class="section-title">Study <em>DNA</em></h1>
+      <p class="section-sub">Your adaptive learning profile — computed from real quiz performance and used to automatically adjust question difficulty.</p>
+    </div>
+
+    <div class="loading-card" id="dna-loading">
+      <div class="loading-spinner"></div>
+      <div style="font-family:var(--font-head);font-size:16px;font-weight:600;color:var(--ink)">Building your profile…</div>
+      <div class="loading-steps">
+        <div class="loading-step active" id="dna1">Reading recent quiz performance</div>
+        <div class="loading-step" id="dna2">Computing skill level per topic</div>
+        <div class="loading-step" id="dna3">Calibrating adaptive difficulty</div>
+      </div>
+    </div>
+
+    <div id="dna-content" style="display:none">
+      <!-- Overall skill card -->
+      <div class="weak-card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+          <div>
+            <div class="wcard-title">Overall Skill Level</div>
+            <div class="wcard-sub">Based on your last 20 answered cards across all topics</div>
+          </div>
+          <div style="text-align:center">
+            <div id="dna-overall-score" style="font-family:var(--font-head);font-size:42px;font-weight:800;color:var(--p)">--</div>
+            <div id="dna-overall-label" style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Loading</div>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:16px;background:var(--paper2);border-radius:12px;border:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">How adaptive difficulty works</div>
+          <div style="font-size:13px;color:#4b5563;line-height:1.7">
+            StudyMind tracks your accuracy on easy, medium, and hard cards in real time. If you're acing easy cards, harder questions get mixed in automatically. If you're struggling, the system backs off to rebuild confidence — this is your Zone of Proximal Development, recalculated after every answer.
+          </div>
+        </div>
+      </div>
+
+      <!-- Per-topic skill bars -->
+      <div class="weak-card">
+        <div class="wcard-title">Skill Level by Topic</div>
+        <div class="wcard-sub">Easy → Medium → Hard, mapped to a 0–3 scale</div>
+        <div id="dna-topics"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -531,6 +583,7 @@ function showView(v){
   event.target.classList.add("active");
   if(v==="graph") initGraph();
   if(v==="weak")  loadWeakAreas();
+  if(v==="dna")   loadStudyDNA();
 }
 
 // ─────────────────────────────────────────
@@ -1128,6 +1181,53 @@ function animateWeakSteps(){
     if(i<steps.length){document.getElementById(steps[i]).classList.add("active");i++;}
     else clearInterval(iv);
   },700);
+}
+
+// ─────────────────────────────────────────
+//  STUDY DNA
+// ─────────────────────────────────────────
+async function loadStudyDNA(){
+  document.getElementById("dna-loading").classList.add("show");
+  document.getElementById("dna-content").style.display="none";
+  animateDnaSteps();
+
+  try{
+    const res = await fetch(`${API}/skill/profile?user_id=${USER}&token=${TOKEN}`, {headers: authHeaders()});
+    const data = await res.json();
+
+    const overall = data.overall_skill || 1.5;
+    const label = overall < 1.0 ? "Beginner" : overall < 2.0 ? "Intermediate" : "Advanced";
+    document.getElementById("dna-overall-score").textContent = overall.toFixed(2);
+    document.getElementById("dna-overall-label").textContent = label;
+
+    const profile = data.profile || [];
+    document.getElementById("dna-topics").innerHTML = profile.length ? profile.map(p=>{
+      const pct = Math.min(100, (p.skill_score/3)*100);
+      const color = p.skill_score<1?"#ef4444":p.skill_score<2?"#f59e0b":"#10b981";
+      return `<div class="mastery-row">
+        <div class="mastery-concept" title="${p.topic}">${p.topic}</div>
+        <div class="mastery-track"><div class="mastery-fill-bar" style="width:${pct}%;background:${color}"></div></div>
+        <div class="mastery-pct" style="color:${color}">${p.skill_label}</div>
+      </div>`;
+    }).join("") : `<div style="color:#9ca3af;font-size:13px">No topics yet — start studying to build your profile</div>`;
+
+    document.getElementById("dna-loading").classList.remove("show");
+    document.getElementById("dna-content").style.display="block";
+  } catch(e){
+    document.getElementById("dna-loading").classList.remove("show");
+    document.getElementById("dna-content").style.display="block";
+    document.getElementById("dna-topics").innerHTML = `<div style="color:#9ca3af;font-size:13px">Could not load profile</div>`;
+  }
+}
+
+function animateDnaSteps(){
+  const steps=["dna1","dna2","dna3"];
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>0){document.getElementById(steps[i-1]).classList.remove("active");document.getElementById(steps[i-1]).classList.add("done");}
+    if(i<steps.length){document.getElementById(steps[i]).classList.add("active");i++;}
+    else clearInterval(iv);
+  },500);
 }
 </script>
 </body>
