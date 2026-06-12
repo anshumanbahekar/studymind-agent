@@ -96,10 +96,16 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     Dashboard
   </a>
   <div id="topbar-title" style="font-family:var(--font-display);font-size:20px;font-weight:500;color:var(--text)">Topic Detail</div>
-  <button class="quiz-btn" onclick="startQuiz()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:6px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-    Quiz This Topic
-  </button>
+  <div style="display:flex;gap:10px">
+    <button class="back-btn" onclick="document.getElementById('notes-modal').style.display='flex'" style="background:#fff">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      My Notes
+    </button>
+    <button class="quiz-btn" onclick="startQuiz()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:6px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Quiz This Topic
+    </button>
+  </div>
 </div>
 
 <div class="content">
@@ -259,7 +265,58 @@ function render(topic, weak, cards, allData){
   `;
 }
 
+
+document.getElementById("notes-topic-name").textContent = TOPIC_TITLE;
+
+async function uploadNotes(){
+  const text = document.getElementById("notes-text").value.trim();
+  if(!text){ document.getElementById("notes-status").textContent="Please paste some notes first."; return; }
+  const btn = document.getElementById("notes-upload-btn");
+  btn.disabled = true;
+  btn.textContent = "Embedding with Gemini…";
+  document.getElementById("notes-status").textContent = "Chunking and generating embeddings…";
+  try{
+    const res = await fetch(`${API}/notes/upload`, {
+      method:"POST", headers: authHeaders(),
+      body: JSON.stringify({text, topic_id: TOPIC_ID, user_id: USER, token: TOKEN, source_name: TOPIC_TITLE + " notes"})
+    });
+    const data = await res.json();
+    if(data.success){
+      document.getElementById("notes-status").textContent = `✓ Stored ${data.chunks_stored} chunks in MongoDB Atlas Vector Search. The AI will now use these notes when teaching ${TOPIC_TITLE}.`;
+      document.getElementById("notes-status").style.color = "var(--green)";
+      document.getElementById("notes-text").value = "";
+    } else {
+      document.getElementById("notes-status").textContent = "Error: " + (data.error||"failed");
+      document.getElementById("notes-status").style.color = "var(--red)";
+    }
+  } catch(e){
+    document.getElementById("notes-status").textContent = "Could not reach server.";
+  }
+  btn.disabled = false;
+  btn.textContent = "Save & Embed Notes";
+}
+
 loadTopic();
 </script>
+
+<!-- Notes Upload Modal -->
+<div id="notes-modal" style="display:none;position:fixed;inset:0;background:rgba(26,5,51,0.5);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:28px;width:520px;max-width:92vw;box-shadow:var(--shadow-lg)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-family:var(--font-display);font-size:22px;font-weight:500;color:var(--text)">Your Notes</div>
+      <button onclick="document.getElementById('notes-modal').style.display='none'" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text4)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:18px">
+      Paste your own notes, textbook excerpts, or lecture material for <strong id="notes-topic-name"></strong>. The AI will use these as the primary source when teaching this topic.
+    </div>
+    <textarea id="notes-text" placeholder="Paste your notes here…" style="width:100%;min-height:160px;border:1.5px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--bg);outline:none;resize:vertical;line-height:1.6" onfocus="this.style.borderColor='var(--p400)';this.style.background='#fff'" onblur="this.style.borderColor='';this.style.background='var(--bg)'"></textarea>
+    <div id="notes-status" style="font-size:12px;color:var(--text4);margin-top:8px;min-height:18px"></div>
+    <button onclick="uploadNotes()" id="notes-upload-btn" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--p500),var(--p700));border:none;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);box-shadow:0 4px 14px rgba(139,92,246,0.3)">
+      Save & Embed Notes
+    </button>
+  </div>
+</div>
 </body>
 </html>
