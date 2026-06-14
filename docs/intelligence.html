@@ -60,46 +60,55 @@ body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;backg
   border-radius:20px;overflow:hidden;position:relative;
   height:520px;margin-bottom:24px;
 }
-#graph-canvas{width:100%;height:100%}
+#graph-canvas{width:100%;height:100%;transition:opacity 0.15s}
+#graph-container.loading #graph-canvas{opacity:0.35}
 .graph-controls{
   position:absolute;top:16px;right:16px;
   display:flex;flex-direction:column;gap:8px;
 }
 .graph-btn{
   width:36px;height:36px;border-radius:10px;
-  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
+  background:#fff;border:1px solid var(--border2);
   color:#374151;font-size:16px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+  box-shadow:var(--shadow);
 }
 .graph-btn:hover{background:var(--p);color:#fff;border-color:var(--p)}
 .graph-legend{
   position:absolute;bottom:16px;left:16px;
-  display:flex;gap:16px;
+  display:flex;gap:16px;flex-wrap:wrap;
+  background:rgba(255,255,255,0.85);backdrop-filter:blur(6px);
+  padding:8px 12px;border-radius:10px;border:1px solid var(--border);
 }
 .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280}
-.legend-dot{width:10px;height:10px;border-radius:50%}
+.legend-dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--border2)}
 .graph-topic-select{
-  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;
+  display:flex;gap:10px;flex-wrap:nowrap;margin-bottom:20px;
+  overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;
 }
+.graph-topic-select::-webkit-scrollbar{height:5px}
+.graph-topic-select::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 .topic-chip{
   padding:8px 16px;border-radius:20px;
-  border:1.5px solid rgba(255,255,255,0.1);
-  background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--border);
+  background:#fff;
   color:#4b5563;font-size:12.5px;font-weight:500;
   cursor:pointer;transition:all 0.15s;font-family:var(--font-body);
+  white-space:nowrap;flex-shrink:0;
 }
-.topic-chip.active{border-color:var(--p);color:var(--p);background:rgba(124,58,237,0.1)}
+.topic-chip.active{border-color:var(--p);color:var(--p);background:var(--p-light)}
 .topic-chip:hover:not(.active){border-color:var(--border2);color:var(--ink)}
 
 /* Tooltip */
 .graph-tooltip{
-  position:absolute;background:var(--paper2);border:1px solid var(--border2);
+  position:absolute;background:#fff;border:1px solid var(--border2);
   border-radius:12px;padding:12px 16px;pointer-events:none;
   opacity:0;transition:opacity 0.15s;z-index:10;max-width:240px;
+  box-shadow:var(--shadow);
 }
 .tooltip-concept{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
 .tooltip-mastery{font-size:12px;color:#6b7280}
-.tooltip-bar{height:3px;background:rgba(255,255,255,0.1);border-radius:3px;margin-top:6px;overflow:hidden}
+.tooltip-bar{height:3px;background:var(--p-light);border-radius:3px;margin-top:6px;overflow:hidden}
 .tooltip-fill{height:100%;border-radius:3px;background:var(--p)}
 
 /* ── EXAM GENERATOR ── */
@@ -371,10 +380,11 @@ body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;backg
         <div class="tooltip-bar"><div class="tooltip-fill" id="tt-fill"></div></div>
       </div>
       <div class="graph-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ink)"></div>Topic</div>
         <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>High mastery</div>
         <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Medium</div>
         <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Needs work</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.15)"></div>Not started</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e5e7eb"></div>Not started</div>
       </div>
     </div>
   </div>
@@ -605,13 +615,20 @@ async function initGraph(){
 
     // Render topic chips
     const chipEl = document.getElementById("graph-topics");
-    chipEl.innerHTML = topics.map((t,i)=>
-      `<button class="topic-chip ${i===0?'active':''}" onclick="loadTopicGraph('${t.topic_id}','${t.title}',this)">${t.title}</button>`
-    ).join("") || `<div style="color:#9ca3af;font-size:13px">No topics yet — add a topic to see your knowledge graph</div>`;
-
     if(topics.length > 0){
-      loadTopicGraph(topics[0].topic_id, topics[0].title, chipEl.querySelector(".topic-chip"));
+      chipEl.innerHTML = topics.map((t,i)=>
+        `<button class="topic-chip ${i===0?'active':''}" data-topic-id="${t.topic_id}" data-topic-title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</button>`
+      ).join("");
+      chipEl.querySelectorAll(".topic-chip").forEach(chip=>{
+        chip.addEventListener("click", () => {
+          loadTopicGraph(chip.dataset.topicId, chip.dataset.topicTitle, chip);
+          chip.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+        });
+      });
+      const first = chipEl.querySelector(".topic-chip");
+      loadTopicGraph(first.dataset.topicId, first.dataset.topicTitle, first);
     } else {
+      chipEl.innerHTML = `<div style="color:#9ca3af;font-size:13px">No topics yet — add a topic to see your knowledge graph</div>`;
       drawEmptyGraph();
     }
   } catch(e){
@@ -619,39 +636,61 @@ async function initGraph(){
   }
 }
 
-function loadTopicGraph(topicId, topicTitle, chipEl){
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function loadTopicGraph(topicId, topicTitle, chipEl){
   document.querySelectorAll(".topic-chip").forEach(c=>c.classList.remove("active"));
   if(chipEl) chipEl.classList.add("active");
 
-  // Generate graph nodes from topics data
-  const topic = (graphData?.topics||[]).find(t=>t.topic_id===topicId) || {title:topicTitle,mastery:0,total_cards:0};
-  const weak   = (graphData?.weak_areas||[]);
+  const container = document.getElementById("graph-container");
+  container.classList.add("loading");
 
-  // Create synthetic concept nodes based on known data
-  const conceptNames = [
-    "Introduction", "Core Theory", "Key Concepts",
-    "Applications", "Advanced Topics", "Practice Problems", "Mastery"
-  ];
+  let concepts = [];
+  try{
+    const res = await fetch(`${API}/topic/graph`, {
+      method:"POST", headers: authHeaders(),
+      body: JSON.stringify({topic_id: topicId, user_id: USER, token: TOKEN})
+    });
+    const data = await res.json();
+    concepts = data.nodes || [];
+  } catch(e){ concepts = []; }
 
-  nodes = conceptNames.map((name, i) => {
-    const isWeak = weak.some(w => w.concept && name.toLowerCase().includes(w.concept.toLowerCase().split(" ")[0]));
-    const baseMastery = topic.mastery || 0;
-    const mastery = Math.max(0, Math.min(100, baseMastery - (i * 8) + (Math.random()*20-10)));
-    return {
-      id: i, label: name,
-      mastery: Math.round(mastery),
-      x: 0, y: 0, vx: 0, vy: 0,
-      radius: 20 + (mastery / 100) * 18,
-      isWeak
-    };
-  });
+  container.classList.remove("loading");
+
+  if(!concepts.length){
+    nodes = []; edges = [];
+    drawEmptyGraph(`No concepts found yet for "${topicTitle}"`);
+    return;
+  }
+
+  // Hub node = the topic itself
+  const hub = {
+    id: "hub", label: topicTitle, mastery: null, isHub: true,
+    x: 0, y: 0, radius: 34,
+  };
+
+  // Spoke nodes = real concepts, sized by how much practice they've had
+  const spokes = concepts.map((c, i) => ({
+    id: c.id, label: c.label, mastery: c.mastery || 0,
+    cards: c.cards || 0, timesSeen: c.times_seen || 0,
+    depthLevel: c.depth_level || 1,
+    isWeak: (c.mastery || 0) > 0 && (c.mastery || 0) < 40,
+    x: 0, y: 0,
+    radius: 22 + Math.min(16, (c.cards || 0) * 1.5),
+  }));
+
+  nodes = [hub, ...spokes];
 
   edges = [];
-  for(let i=0;i<nodes.length-1;i++){
-    edges.push({from:i, to:i+1, strength: nodes[i].mastery/100});
-    if(i < nodes.length-2 && Math.random()>0.5){
-      edges.push({from:i, to:i+2, strength:0.3});
-    }
+  // Hub connects to every concept
+  spokes.forEach((s, i) => {
+    edges.push({from: "hub", to: s.id, strength: 0.15 + (s.mastery/100) * 0.25});
+  });
+  // Sequential edges show the learning order (foundational -> advanced)
+  for(let i = 0; i < spokes.length - 1; i++){
+    edges.push({from: spokes[i].id, to: spokes[i+1].id, strength: 0.2 + (Math.min(spokes[i].mastery, spokes[i+1].mastery)/100) * 0.3});
   }
 
   layoutGraph();
@@ -662,32 +701,53 @@ function layoutGraph(){
   const canvas = document.getElementById("graph-canvas");
   const W = canvas.offsetWidth, H = canvas.offsetHeight;
   const cx = W/2, cy = H/2;
-  const r = Math.min(W,H) * 0.32;
 
-  nodes.forEach((n,i) => {
-    const angle = (i / nodes.length) * Math.PI * 2 - Math.PI/2;
+  const hub = nodes.find(n => n.isHub);
+  const spokes = nodes.filter(n => !n.isHub);
+
+  if(hub){ hub.x = cx; hub.y = cy; }
+
+  // Spread spokes further out when there are more of them so they don't overlap
+  const baseR = Math.min(W,H) * 0.34;
+  const r = Math.min(Math.min(W,H)*0.46, baseR + Math.max(0, spokes.length - 5) * 14);
+
+  spokes.forEach((n,i) => {
+    const angle = (i / spokes.length) * Math.PI * 2 - Math.PI/2;
     n.x = cx + Math.cos(angle) * r;
     n.y = cy + Math.sin(angle) * r;
   });
+
   scale = 1; offsetX = 0; offsetY = 0;
 }
 
-function drawEmptyGraph(){
+function drawEmptyGraph(message){
   const canvas = document.getElementById("graph-canvas");
   const ctx = canvas.getContext("2d");
   canvas.width = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
-  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  ctx.fillStyle = "#9ca3af";
   ctx.font = "14px 'DM Sans'";
   ctx.textAlign = "center";
-  ctx.fillText("Add topics to see your knowledge graph", canvas.width/2, canvas.height/2);
+  ctx.fillText(message || "Add topics to see your knowledge graph", canvas.width/2, canvas.height/2);
 }
 
-function nodeColor(mastery, isWeak){
-  if(mastery === 0) return "rgba(255,255,255,0.12)";
+function nodeColor(mastery, isWeak, isHub){
+  if(isHub) return "#1a0533";
+  if(mastery === 0) return "#e5e7eb";
   if(isWeak || mastery < 40) return "#ef4444";
   if(mastery < 70) return "#f59e0b";
   return "#7c3aed";
+}
+
+// Returns an rgba() glow color for any node fill (hex or rgb)
+function glowColor(hex, alpha){
+  let r,g,b;
+  if(hex.startsWith("#")){
+    const v = hex.slice(1);
+    const full = v.length === 3 ? v.split("").map(c=>c+c).join("") : v;
+    r = parseInt(full.slice(0,2),16); g = parseInt(full.slice(2,4),16); b = parseInt(full.slice(4,6),16);
+  } else { r=124; g=58; b=237; }
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function startAnimation(){
@@ -702,29 +762,32 @@ function draw(){
   canvas.width = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
 
+  const nodeById = id => nodes.find(n => n.id === id);
+
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
   // Draw edges
   edges.forEach(e => {
-    const from = nodes[e.from], to = nodes[e.to];
+    const from = nodeById(e.from), to = nodeById(e.to);
+    if(!from || !to) return;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
-    ctx.strokeStyle = `rgba(124,58,237,${0.1 + e.strength * 0.3})`;
+    ctx.strokeStyle = `rgba(124,58,237,${0.12 + e.strength * 0.35})`;
     ctx.lineWidth = 1 + e.strength * 2;
     ctx.stroke();
   });
 
   // Draw nodes
   nodes.forEach(n => {
-    const color = nodeColor(n.mastery, n.isWeak);
+    const color = nodeColor(n.mastery, n.isWeak, n.isHub);
 
     // Glow
-    if(n.mastery > 0){
+    if(n.isHub || n.mastery > 0){
       const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius * 2);
-      grd.addColorStop(0, color.replace(")", ",0.2)").replace("rgb","rgba") || "rgba(124,58,237,0.15)");
+      grd.addColorStop(0, glowColor(color, 0.18));
       grd.addColorStop(1, "transparent");
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.radius * 2, 0, Math.PI*2);
@@ -736,46 +799,77 @@ function draw(){
     ctx.beginPath();
     ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2);
     ctx.fillStyle = color;
-    ctx.globalAlpha = n.mastery === 0 ? 0.3 : 0.85;
+    ctx.globalAlpha = (!n.isHub && n.mastery === 0) ? 0.6 : 0.92;
     ctx.fill();
     ctx.globalAlpha = 1;
 
     // Border
     ctx.beginPath();
     ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2);
-    ctx.strokeStyle = n.mastery > 0 ? color : "rgba(255,255,255,0.2)";
+    ctx.strokeStyle = (!n.isHub && n.mastery === 0) ? "#d1d5db" : color;
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
     // Label
-    ctx.fillStyle = n.mastery > 50 ? "#fff" : "rgba(0,0,0,0.6)";
-    ctx.font = `${Math.max(10, n.radius*0.55)}px 'DM Sans'`;
+    const isDarkFill = n.isHub || (n.mastery >= 40);
+    ctx.fillStyle = isDarkFill ? "#fff" : "#374151";
+    const fontSize = Math.max(9, Math.min(12, n.radius * 0.42));
+    ctx.font = `${n.isHub ? "600 " : ""}${fontSize}px 'DM Sans'`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const words = n.label.split(" ");
-    if(words.length > 1 && n.radius > 24){
-      ctx.fillText(words[0], n.x, n.y - 6);
-      ctx.fillText(words.slice(1).join(" "), n.x, n.y + 8);
-    } else {
-      ctx.fillText(n.label.length > 10 ? n.label.slice(0,9)+"…" : n.label, n.x, n.y);
-    }
 
-    // Mastery % badge
-    if(n.mastery > 0){
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
+    const lines = wrapLabel(n.label, n.isHub ? 16 : 11, n.isHub ? 2 : 2);
+    const lineHeight = fontSize + 2;
+    const startY = n.y - ((lines.length - 1) * lineHeight) / 2;
+    lines.forEach((line, i) => ctx.fillText(line, n.x, startY + i * lineHeight));
+
+    // Mastery % badge (concepts only)
+    if(!n.isHub && n.mastery > 0){
+      ctx.fillStyle = "#1a0533";
       ctx.beginPath();
-      ctx.arc(n.x + n.radius*0.7, n.y - n.radius*0.7, 11, 0, Math.PI*2);
+      ctx.arc(n.x + n.radius*0.72, n.y - n.radius*0.72, 11, 0, Math.PI*2);
       ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
       ctx.fillStyle = "#fff";
       ctx.font = "bold 8px 'DM Sans'";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(n.mastery+"%", n.x + n.radius*0.7, n.y - n.radius*0.7);
+      ctx.fillText(n.mastery+"%", n.x + n.radius*0.72, n.y - n.radius*0.72);
     }
   });
 
   ctx.restore();
   animFrame = requestAnimationFrame(draw);
+}
+
+// Wraps a label into at most maxLines lines of ~maxChars characters each
+function wrapLabel(label, maxChars, maxLines){
+  const words = (label || "").split(/\s+/);
+  const lines = [];
+  let current = "";
+  for(const word of words){
+    const candidate = current ? current + " " + word : word;
+    if(candidate.length > maxChars && current){
+      lines.push(current);
+      current = word;
+      if(lines.length === maxLines - 1) break;
+    } else {
+      current = candidate;
+    }
+  }
+  if(current) lines.push(current);
+  // If words remain unprocessed, truncate last line with ellipsis
+  const processedWords = lines.join(" ").split(/\s+/).length;
+  if(processedWords < words.length){
+    let last = lines[lines.length-1];
+    while(last.length > maxChars - 1) last = last.slice(0, -1);
+    lines[lines.length-1] = last.replace(/\s+\S*$/, "") + "…";
+  } else if(lines.length === 1 && lines[0].length > maxChars + 4){
+    lines[0] = lines[0].slice(0, maxChars - 1) + "…";
+  }
+  return lines.slice(0, maxLines);
 }
 
 // Zoom
@@ -797,13 +891,20 @@ document.getElementById("graph-canvas").addEventListener("mousemove", e => {
   });
   if(hit){
     document.getElementById("tt-concept").textContent = hit.label;
-    document.getElementById("tt-mastery").textContent = hit.mastery > 0 ? `Mastery: ${hit.mastery}%` : "Not started yet";
-    document.getElementById("tt-fill").style.width = hit.mastery+"%";
+    if(hit.isHub){
+      document.getElementById("tt-mastery").textContent = `${nodes.length - 1} concept${nodes.length-1===1?"":"s"} in this topic`;
+      document.getElementById("tt-fill").style.width = "100%";
+    } else {
+      document.getElementById("tt-mastery").textContent = hit.mastery > 0 ? `Mastery: ${hit.mastery}% · ${hit.cards||0} card${hit.cards===1?"":"s"}` : "Not started yet";
+      document.getElementById("tt-fill").style.width = hit.mastery+"%";
+    }
     tooltip.style.left = (e.clientX - rect.left + 12)+"px";
     tooltip.style.top  = (e.clientY - rect.top - 20)+"px";
     tooltip.style.opacity = "1";
+    canvas.style.cursor = "pointer";
   } else {
     tooltip.style.opacity = "0";
+    canvas.style.cursor = "default";
   }
 });
 
