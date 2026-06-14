@@ -186,6 +186,46 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .heat-cell{width:12px;height:12px;border-radius:3px;background:var(--bg4)}
 .heat-cell.l1{background:rgba(168,85,247,0.18)}.heat-cell.l2{background:rgba(168,85,247,0.38)}.heat-cell.l3{background:rgba(168,85,247,0.62)}.heat-cell.l4{background:var(--p500)}
 
+/* ── AGENT ACTIVITY DRAWER ── */
+.logs-fab{
+  position:fixed;bottom:24px;right:24px;z-index:200;
+  width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,var(--p500),var(--p700));
+  border:none;color:#fff;font-size:19px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(124,58,237,0.35);
+  transition:transform 0.15s;
+}
+.logs-fab:hover{transform:translateY(-2px) scale(1.04)}
+.logs-fab .fab-dot{
+  position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;
+  background:var(--green);border:2px solid #fff;display:none;
+}
+.logs-fab.has-new .fab-dot{display:block}
+.logs-drawer{
+  position:fixed;bottom:24px;right:24px;z-index:201;
+  width:380px;max-width:calc(100vw - 32px);max-height:70vh;
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:0 12px 40px rgba(31,16,79,0.18);
+  display:flex;flex-direction:column;overflow:hidden;
+  opacity:0;transform:translateY(16px) scale(0.97);pointer-events:none;
+  transition:all 0.18s ease;
+}
+.logs-drawer.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.logs-drawer-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,var(--bg3),#fff);
+}
+.logs-drawer-title{font-size:13px;font-weight:700;color:var(--text)}
+.logs-drawer-sub{font-size:11px;color:var(--text4);margin-top:2px}
+.logs-drawer-actions{display:flex;gap:8px;align-items:center}
+.logs-drawer-actions button{
+  background:none;border:none;color:var(--text4);cursor:pointer;
+  font-size:15px;padding:4px;border-radius:6px;display:flex;
+}
+.logs-drawer-actions button:hover{background:var(--bg3);color:var(--text)}
+
 .empty-state{text-align:center;padding:28px 16px;color:var(--text4);font-size:13px}
 .empty-state i{font-size:28px;display:block;margin-bottom:8px;color:var(--bg4)}
 
@@ -221,9 +261,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="nav-item" onclick="openQuizModal()"><i class="ti ti-writing"></i> Quiz Mode</button>
     <div class="nav-section-label">Intelligence</div>
     <button class="nav-item" onclick="showView('dashboard')"><i class="ti ti-chart-dots"></i> Progress Analytics</button>
-    <button class="nav-item" onclick="showView('logs')"><i class="ti ti-terminal"></i> Agent Logs</button>
+    <a class="nav-item" href="intelligence.html" style="text-decoration:none;display:flex"><i class="ti ti-sparkles"></i> Intelligence Hub</a>
     <div class="nav-section-label">Agent</div>
-    <button class="nav-item" onclick="showView('logs')"><i class="ti ti-database"></i> MongoDB Store</button>
     <button class="nav-item"><i class="ti ti-settings"></i> Settings</button>
   </nav>
   <div class="sidebar-footer">
@@ -408,23 +447,31 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
   </div>
 
-  <!-- Logs view -->
-  <div class="content" id="view-logs" style="display:none">
-    <div class="log-panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">Agent Logs — Live MCP Tool Calls</div>
-          <div class="panel-sub">Every interaction with MongoDB Atlas is logged here in real time</div>
-        </div>
-        <button class="panel-action" onclick="clearLogs()"><i class="ti ti-trash"></i> Clear</button>
-      </div>
-      <div class="log-body" id="log-body">
-        <div class="log-entry info">— Waiting for agent activity —</div>
-      </div>
-    </div>
-  </div>
+  <!-- Logs view (legacy container, no longer used as a full page) -->
+  <div class="content" id="view-logs" style="display:none"></div>
 
 </main>
+
+<!-- Agent Activity floating drawer (MongoDB MCP live calls) -->
+<button class="logs-fab" id="logs-fab" onclick="toggleLogDrawer()" title="Agent Activity — Live MongoDB MCP Calls">
+  <i class="ti ti-terminal"></i>
+  <div class="fab-dot" id="logs-fab-dot"></div>
+</button>
+<div class="logs-drawer" id="logs-drawer">
+  <div class="logs-drawer-header">
+    <div>
+      <div class="logs-drawer-title">Agent Activity</div>
+      <div class="logs-drawer-sub">Live MongoDB Atlas MCP tool calls</div>
+    </div>
+    <div class="logs-drawer-actions">
+      <button onclick="clearLogs()" title="Clear"><i class="ti ti-trash"></i></button>
+      <button onclick="toggleLogDrawer()" title="Close"><i class="ti ti-x"></i></button>
+    </div>
+  </div>
+  <div class="log-body" id="log-body" style="max-height:340px">
+    <div class="log-entry info">— Waiting for agent activity —</div>
+  </div>
+</div>
 
 <!-- Quiz Modal -->
 <div class="modal-overlay" id="quiz-modal">
@@ -548,7 +595,6 @@ async function refreshAll(){ await loadProgress(); }
 
 function showView(v){
   document.getElementById("view-dashboard").style.display = v==="dashboard"?"block":"none";
-  document.getElementById("view-logs").style.display      = v==="logs"?"block":"none";
 }
 
 async function loadProgress(){
@@ -817,7 +863,13 @@ function setAgentBusy(busy){
   document.getElementById("agent-status-text").textContent=busy?"Thinking…":"Online · Gemini Flash";
 }
 
-// ── LOGS ──
+// ── AGENT ACTIVITY DRAWER ──
+let logDrawerOpen = false;
+function toggleLogDrawer(){
+  logDrawerOpen = !logDrawerOpen;
+  document.getElementById("logs-drawer").classList.toggle("open", logDrawerOpen);
+  if(logDrawerOpen) document.getElementById("logs-fab").classList.remove("has-new");
+}
 function appendLogs(logs){
   if(!logs||!logs.length)return;
   allLogs=allLogs.concat(logs);
@@ -829,17 +881,40 @@ function appendLogs(logs){
     d.className=`log-entry ${cls}`;d.textContent=`[${nowTime()}] ${l}`;body.appendChild(d);
   });
   body.scrollTop=body.scrollHeight;
+  if(!logDrawerOpen) document.getElementById("logs-fab").classList.add("has-new");
 }
 function clearLogs(){allLogs=[];document.getElementById("log-body").innerHTML=`<div class="log-entry info">— Logs cleared —</div>`;}
 
-// ── HEATMAP ──
-function buildHeatmap(){
-  const hm=document.getElementById("heatmap");const lvl=[0,0,0,1,1,2,2,3,4];
-  for(let i=0;i<90;i++){
-    const c=document.createElement("div");c.className="heat-cell";
-    const r=Math.random();if(r>0.38){const l=lvl[Math.floor(Math.random()*lvl.length)];if(l>0)c.classList.add("l"+l);}
-    if(i>76&&Math.random()>0.3){c.className="heat-cell l"+(Math.floor(Math.random()*3)+2);}
-    hm.appendChild(c);
+// ── HEATMAP (real data from /activity/heatmap) ──
+async function buildHeatmap(){
+  const hm=document.getElementById("heatmap");
+  hm.innerHTML="";
+  try{
+    const res=await fetch(`${API}/activity/heatmap?user_id=${USER}&token=${TOKEN}&days=90`, {headers: authHeaders()});
+    const data=await res.json();
+    const days=data.days||[];
+    days.forEach(d=>{
+      const c=document.createElement("div");
+      c.className="heat-cell";
+      const cards=d.cards||0;
+      let level=0;
+      if(cards>=30) level=4;
+      else if(cards>=16) level=3;
+      else if(cards>=6) level=2;
+      else if(cards>=1) level=1;
+      if(level>0) c.classList.add("l"+level);
+      const dateLabel=new Date(d.date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});
+      c.title = cards>0
+        ? `${dateLabel} — ${cards} card${cards===1?"":"s"} reviewed (${d.sessions} session${d.sessions===1?"":"s"})`
+        : `${dateLabel} — no activity`;
+      hm.appendChild(c);
+    });
+  }catch(e){
+    // Fallback: render empty grid so layout doesn't break
+    for(let i=0;i<90;i++){
+      const c=document.createElement("div");c.className="heat-cell";
+      hm.appendChild(c);
+    }
   }
 }
 
