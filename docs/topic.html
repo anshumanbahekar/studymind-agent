@@ -86,6 +86,37 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .animate{animation:fadeUp 0.4s ease both}
+
+/* ── Notes Library ── */
+.notes-tabs{display:flex;gap:18px;margin-top:14px;border-bottom:1px solid var(--border)}
+.notes-tab{padding:10px 2px;border:none;background:none;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text4);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.15s}
+.notes-tab.active{color:var(--p600);border-bottom-color:var(--p500)}
+.notes-tab:hover:not(.active){color:var(--text2)}
+.notes-tab-content{display:none}
+.notes-tab-content.active{display:block}
+.notes-search-row{display:flex;gap:8px;margin-top:16px}
+.notes-search-row input{flex:1;border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--bg);outline:none}
+.notes-search-row input:focus{border-color:var(--p400);background:#fff}
+.notes-search-row button{padding:11px 18px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--p500),var(--p700));color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body)}
+.notes-search-row button:disabled{opacity:0.6;cursor:default}
+.notes-scope{display:flex;gap:16px;margin:10px 0 4px;font-size:12px;color:var(--text3)}
+.notes-scope label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.notes-results{margin-top:14px;max-height:320px;overflow-y:auto}
+.note-result{border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.note-result-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.note-result-source{font-size:11px;font-weight:700;color:var(--p600);text-transform:uppercase;letter-spacing:0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-result-score{font-size:11px;color:var(--text4);flex-shrink:0;font-weight:600}
+.note-result-text{font-size:12.5px;color:var(--text2);line-height:1.65}
+.note-result-text mark{background:var(--p100);color:var(--p700);border-radius:3px;padding:0 2px;font-weight:600}
+.note-result-topic{font-size:11px;color:var(--text4);margin-top:6px}
+.notes-empty{color:var(--text4);font-size:13px;text-align:center;padding:24px 0}
+.note-source-card{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.note-source-title{font-size:13px;font-weight:600;color:var(--text)}
+.note-source-meta{font-size:11px;color:var(--text4);margin-top:3px}
+.note-source-preview{font-size:12px;color:var(--text3);margin-top:6px;line-height:1.5}
+.note-delete-btn{border:none;background:none;color:var(--text4);cursor:pointer;padding:6px;border-radius:8px;display:flex;flex-shrink:0;transition:all 0.15s}
+.note-delete-btn:hover{background:var(--red-bg);color:var(--red)}
+.notes-loading{text-align:center;padding:24px;color:var(--text4);font-size:12.5px}
 </style>
 </head>
 <body>
@@ -97,7 +128,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </a>
   <div id="topbar-title" style="font-family:var(--font-display);font-size:20px;font-weight:500;color:var(--text)">Topic Detail</div>
   <div style="display:flex;gap:10px">
-    <button class="back-btn" onclick="document.getElementById('notes-modal').style.display='flex'" style="background:#fff">
+    <button class="back-btn" onclick="openNotesModal()" style="background:#fff">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       My Notes
     </button>
@@ -300,25 +331,163 @@ async function uploadNotes(){
 }
 
 loadTopic();
+
+// ─────────────────────────────────────────
+//  NOTES LIBRARY (Upload / Search / My Notes)
+// ─────────────────────────────────────────
+let notesSearchScope = "topic";
+let notesLibraryLoaded = false;
+
+function openNotesModal(){
+  document.getElementById("notes-modal").style.display = "flex";
+  switchNotesTab("upload");
+}
+
+function switchNotesTab(tab){
+  document.querySelectorAll(".notes-tab").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  document.querySelectorAll(".notes-tab-content").forEach(c=>c.classList.remove("active"));
+  document.getElementById("notes-tab-"+tab).classList.add("active");
+  if(tab==="library") loadNotesLibrary();
+  if(tab==="search") document.getElementById("notes-search-input").focus();
+}
+
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// Highlights query words inside a snippet (HTML-escaped first)
+function highlightText(text, query){
+  let escaped = escapeHtml(text);
+  const words = [...new Set(query.toLowerCase().split(/\s+/).filter(w=>w.length>2))];
+  words.forEach(w=>{
+    const re = new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})`, "gi");
+    escaped = escaped.replace(re, "<mark>$1</mark>");
+  });
+  return escaped;
+}
+
+async function runNotesSearch(){
+  const query = document.getElementById("notes-search-input").value.trim();
+  const resultsEl = document.getElementById("notes-results");
+  if(!query){ resultsEl.innerHTML = `<div class="notes-empty">Type something to search your notes.</div>`; return; }
+
+  const btn = document.getElementById("notes-search-btn");
+  btn.disabled = true; btn.textContent = "Searching…";
+  resultsEl.innerHTML = `<div class="notes-loading">Running semantic search over your notes…</div>`;
+
+  try{
+    const res = await fetch(`${API}/notes/search`, {
+      method:"POST", headers: authHeaders(),
+      body: JSON.stringify({
+        query,
+        topic_id: notesSearchScope==="topic" ? TOPIC_ID : null,
+        user_id: USER, token: TOKEN, limit: 6
+      })
+    });
+    const data = await res.json();
+    const results = data.results || [];
+    resultsEl.innerHTML = results.length ? results.map(r=>`
+      <div class="note-result">
+        <div class="note-result-header">
+          <div class="note-result-source">${escapeHtml(r.source || "Notes")}</div>
+          <div class="note-result-score">${Math.round((r.score||0)*100)}% match</div>
+        </div>
+        <div class="note-result-text">${highlightText((r.text||"").slice(0,320) + ((r.text||"").length>320?"…":""), query)}</div>
+        ${notesSearchScope==="all" ? `<div class="note-result-topic">From: ${escapeHtml(r.topic_title || "General")}</div>` : ""}
+      </div>`).join("")
+    : `<div class="notes-empty">No matches found${notesSearchScope==="topic" ? " in this topic's notes" : ""}. Try different wording, or check "All my notes".</div>`;
+  } catch(e){
+    resultsEl.innerHTML = `<div class="notes-empty">Could not reach server.</div>`;
+  }
+  btn.disabled = false; btn.textContent = "Search";
+}
+
+async function loadNotesLibrary(){
+  const listEl = document.getElementById("notes-library-list");
+  listEl.innerHTML = `<div class="notes-loading">Loading your uploaded notes…</div>`;
+  try{
+    const res = await fetch(`${API}/notes/list?topic_id=${TOPIC_ID}&user_id=${USER}&token=${TOKEN}`, {headers: authHeaders()});
+    const data = await res.json();
+    const sources = data.sources || [];
+    listEl.innerHTML = sources.length ? sources.map(s=>`
+      <div class="note-source-card">
+        <div style="flex:1">
+          <div class="note-source-title">${escapeHtml(s.source)}</div>
+          <div class="note-source-meta">${s.chunk_count} chunk${s.chunk_count===1?"":"s"} · ${s.char_count.toLocaleString()} characters${s.created_at ? " · "+new Date(s.created_at).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : ""}</div>
+          <div class="note-source-preview">${escapeHtml(s.preview)}${s.preview.length>=180?"…":""}</div>
+        </div>
+        <button class="note-delete-btn" title="Delete these notes" onclick="deleteNoteSource('${s.source.replace(/'/g,"\\'")}')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>`).join("")
+    : `<div class="notes-empty">No notes uploaded for this topic yet. Switch to the Upload tab to add some.</div>`;
+  } catch(e){
+    listEl.innerHTML = `<div class="notes-empty">Could not reach server.</div>`;
+  }
+}
+
+async function deleteNoteSource(source){
+  if(!confirm(`Delete all notes from "${source}"? This can't be undone.`)) return;
+  try{
+    await fetch(`${API}/notes/delete`, {
+      method:"POST", headers: authHeaders(),
+      body: JSON.stringify({source, topic_id: TOPIC_ID, user_id: USER, token: TOKEN})
+    });
+  } catch(e){}
+  loadNotesLibrary();
+}
+
 </script>
 
-<!-- Notes Upload Modal -->
+<!-- Notes Library Modal -->
 <div id="notes-modal" style="display:none;position:fixed;inset:0;background:rgba(26,5,51,0.5);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:20px;padding:28px;width:520px;max-width:92vw;box-shadow:var(--shadow-lg)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-family:var(--font-display);font-size:22px;font-weight:500;color:var(--text)">Your Notes</div>
+  <div style="background:#fff;border-radius:20px;padding:28px;width:560px;max-width:92vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-family:var(--font-display);font-size:22px;font-weight:500;color:var(--text)">Notes Library</div>
       <button onclick="document.getElementById('notes-modal').style.display='none'" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text4)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:18px">
-      Paste your own notes, textbook excerpts, or lecture material for <strong id="notes-topic-name"></strong>. The AI will use these as the primary source when teaching this topic.
+    <div style="font-size:12.5px;color:var(--text3)">For <strong id="notes-topic-name"></strong></div>
+
+    <div class="notes-tabs">
+      <button class="notes-tab active" data-tab="upload" onclick="switchNotesTab('upload')">Upload</button>
+      <button class="notes-tab" data-tab="search" onclick="switchNotesTab('search')">Search</button>
+      <button class="notes-tab" data-tab="library" onclick="switchNotesTab('library')">My Notes</button>
     </div>
-    <textarea id="notes-text" placeholder="Paste your notes here…" style="width:100%;min-height:160px;border:1.5px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--bg);outline:none;resize:vertical;line-height:1.6" onfocus="this.style.borderColor='var(--p400)';this.style.background='#fff'" onblur="this.style.borderColor='';this.style.background='var(--bg)'"></textarea>
-    <div id="notes-status" style="font-size:12px;color:var(--text4);margin-top:8px;min-height:18px"></div>
-    <button onclick="uploadNotes()" id="notes-upload-btn" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--p500),var(--p700));border:none;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);box-shadow:0 4px 14px rgba(139,92,246,0.3)">
-      Save & Embed Notes
-    </button>
+
+    <div style="overflow-y:auto;flex:1;margin-top:4px">
+      <!-- Upload tab -->
+      <div id="notes-tab-upload" class="notes-tab-content active">
+        <div style="font-size:13px;color:var(--text3);line-height:1.6;margin:14px 0">
+          Paste your own notes, textbook excerpts, or lecture material. The AI will use these as the primary source when teaching this topic.
+        </div>
+        <textarea id="notes-text" placeholder="Paste your notes here…" style="width:100%;min-height:160px;border:1.5px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--bg);outline:none;resize:vertical;line-height:1.6" onfocus="this.style.borderColor='var(--p400)';this.style.background='#fff'" onblur="this.style.borderColor='';this.style.background='var(--bg)'"></textarea>
+        <div id="notes-status" style="font-size:12px;color:var(--text4);margin-top:8px;min-height:18px"></div>
+        <button onclick="uploadNotes()" id="notes-upload-btn" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--p500),var(--p700));border:none;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);box-shadow:0 4px 14px rgba(139,92,246,0.3)">
+          Save & Embed Notes
+        </button>
+      </div>
+
+      <!-- Search tab -->
+      <div id="notes-tab-search" class="notes-tab-content">
+        <div class="notes-search-row">
+          <input id="notes-search-input" type="text" placeholder="Search your notes — e.g. &quot;chain rule&quot;, &quot;mitosis stages&quot;…" onkeydown="if(event.key==='Enter')runNotesSearch()">
+          <button id="notes-search-btn" onclick="runNotesSearch()">Search</button>
+        </div>
+        <div class="notes-scope">
+          <label><input type="radio" name="notes-scope" value="topic" checked onchange="notesSearchScope='topic'"> This topic</label>
+          <label><input type="radio" name="notes-scope" value="all" onchange="notesSearchScope='all'"> All my notes</label>
+        </div>
+        <div id="notes-results" class="notes-results"></div>
+      </div>
+
+      <!-- Library tab -->
+      <div id="notes-tab-library" class="notes-tab-content">
+        <div style="font-size:12.5px;color:var(--text3);margin:14px 0 4px">Sources you've uploaded for this topic</div>
+        <div id="notes-library-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 </body>
