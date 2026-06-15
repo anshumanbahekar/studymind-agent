@@ -266,7 +266,10 @@ function render(topic, weak, cards, allData){
 }
 
 
-document.getElementById("notes-topic-name").textContent = TOPIC_TITLE;
+document.addEventListener("DOMContentLoaded", () => {
+  const el = document.getElementById("notes-topic-name");
+  if(el) el.textContent = TOPIC_TITLE;
+});
 
 async function uploadNotes(){
   const text = document.getElementById("notes-text").value.trim();
