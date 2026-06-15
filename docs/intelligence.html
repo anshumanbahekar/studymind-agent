@@ -242,6 +242,14 @@ body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;backg
   font-family:var(--font-body);transition:all 0.15s;
 }
 .retake-btn:hover{background:rgba(124,58,237,0.25);color:#fff}
+.feedback-item{
+  display:flex;gap:10px;padding:10px 14px;border-radius:10px;
+  background:var(--paper);border:1px solid var(--border);margin-bottom:8px;font-size:12.5px;
+}
+.feedback-item.wrong{border-color:rgba(239,68,68,0.25)}
+.feedback-item.correct{border-color:rgba(16,185,129,0.25)}
+.feedback-q{font-weight:600;color:var(--ink);margin-bottom:2px}
+.feedback-text{color:#6b7280;line-height:1.5}
 
 /* ── WEAK AREA DETECTOR ── */
 .weak-dashboard{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
@@ -476,6 +484,7 @@ body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;backg
       <div class="result-score" id="result-score">0%</div>
       <div class="result-label" id="result-label"></div>
       <div class="result-breakdown" id="result-breakdown"></div>
+      <div id="result-feedback" style="max-width:560px;margin:0 auto 24px;text-align:left"></div>
       <button class="retake-btn" onclick="resetExam()">Take Another Exam</button>
     </div>
   </div>
@@ -912,6 +921,7 @@ document.getElementById("graph-canvas").addEventListener("mousemove", e => {
 //  AI EXAM GENERATOR
 // ─────────────────────────────────────────
 let examData = null;
+let examTopic = "";
 let timerInterval = null;
 let timeLeft = 1200;
 let answers = {};
@@ -931,38 +941,18 @@ async function generateExam(){
 
   animateExamSteps();
 
-  // Generate exam questions using the chat endpoint
-  const prompt = `Generate a ${diff} difficulty exam on "${topic}" with ${count} questions (${type} format). 
-Return ONLY valid JSON, no markdown:
-{
-  "title": "Exam title",
-  "duration_minutes": ${Math.ceil(count*2)},
-  "questions": [
-    {
-      "id": 1,
-      "type": "mcq",
-      "text": "Question text?",
-      "options": ["A. option","B. option","C. option","D. option"],
-      "correct": "A",
-      "points": 10
-    },
-    {
-      "id": 2,
-      "type": "short",
-      "text": "Question text?",
-      "sample_answer": "Key points to cover",
-      "points": 15
-    }
-  ]
-}`;
-
+  examTopic = topic;
   try{
-    const res = await fetch(`${API}/chat`, {
+    const res = await fetch(`${API}/exam/generate`, {
       method:"POST", headers: authHeaders(),
-      body: JSON.stringify({message: "generate exam: "+prompt, user_id: USER, token: TOKEN})
+      body: JSON.stringify({topic, difficulty: diff, count, type, user_id: USER, token: TOKEN})
     });
-    // Use fallback exam since chat endpoint may not return JSON exam format
-    examData = generateFallbackExam(topic, diff, count, type);
+    const data = await res.json();
+    if(data && Array.isArray(data.questions) && data.questions.length){
+      examData = data;
+    } else {
+      examData = generateFallbackExam(topic, diff, count, type);
+    }
   } catch(e){
     examData = generateFallbackExam(topic, diff, count, type);
   }
@@ -972,20 +962,14 @@ Return ONLY valid JSON, no markdown:
   renderExam();
 }
 
+// Minimal client-side fallback, used only if /exam/generate is unreachable entirely
 function generateFallbackExam(topic, diff, count, type){
   const mcqTemplates = [
     {text:`Which of the following BEST describes the core principle of ${topic}?`,options:["A. A systematic approach to solving problems","B. A method for organizing information","C. A framework for understanding relationships","D. A technique for pattern recognition"],correct:"A"},
     {text:`What is the PRIMARY purpose of studying ${topic}?`,options:["A. To memorize facts and definitions","B. To build transferable analytical skills","C. To pass standardized examinations","D. To follow established procedures"],correct:"B"},
-    {text:`In ${topic}, which concept is considered FOUNDATIONAL?`,options:["A. Advanced optimization techniques","B. Core definitions and axioms","C. Applied implementation methods","D. Historical development context"],correct:"B"},
-    {text:`How does ${topic} relate to real-world problem solving?`,options:["A. It provides theoretical frameworks only","B. It offers practical tools for analysis","C. It describes historical patterns","D. It defines abstract mathematical structures"],correct:"B"},
-    {text:`Which statement about ${topic} is MOST accurate?`,options:["A. It is only applicable in academic settings","B. It requires specialized equipment","C. It can be applied across multiple domains","D. It is primarily a historical discipline"],correct:"C"},
   ];
   const shortTemplates = [
-    {text:`Explain the key difference between the two main approaches in ${topic}. Give a concrete example.`, sample:"Should cover: definition of each approach, key distinguishing features, practical example"},
-    {text:`Describe a real-world scenario where ${topic} would be applied. What would be the expected outcome?`, sample:"Should cover: specific scenario, application method, expected result"},
-    {text:`What are the three most important concepts in ${topic}? Why are they important?`, sample:"Should identify 3 core concepts and explain their significance"},
-    {text:`How would you explain ${topic} to someone with no background in the subject?`, sample:"Should use analogies, avoid jargon, build from simple to complex"},
-    {text:`What is the most common misconception about ${topic}, and what is the correct understanding?`, sample:"Should identify misconception, explain why it's wrong, provide correct view"},
+    {text:`Explain the key difference between the two main approaches in ${topic}. Give a concrete example.`, sample_answer:"Should cover: definition of each approach, key distinguishing features, practical example"},
   ];
 
   const questions = [];
@@ -1003,7 +987,8 @@ function generateFallbackExam(topic, diff, count, type){
   return {
     title: `${topic} — ${diff.charAt(0).toUpperCase()+diff.slice(1)} Exam`,
     duration_minutes: Math.ceil(count*2),
-    questions
+    questions,
+    generated_by: "offline_fallback",
   };
 }
 
@@ -1035,10 +1020,10 @@ function renderExam(){
     mcqs.forEach(q=>{
       html += `<div class="exam-question" id="eq-${q.id}">
         <div class="q-num">Question ${q.id} · ${q.points} pts</div>
-        <div class="q-text">${q.text}</div>
+        <div class="q-text">${escapeHtml(q.text)}</div>
         <div class="q-mcq">${q.options.map(o=>`
           <div class="q-option" onclick="selectMCQ(${q.id},'${o[0]}',this)">
-            <div class="q-radio"></div>${o}
+            <div class="q-radio"></div>${escapeHtml(o)}
           </div>`).join("")}
         </div></div>`;
     });
@@ -1049,7 +1034,7 @@ function renderExam(){
     shorts.forEach(q=>{
       html += `<div class="exam-question">
         <div class="q-num">Question ${q.id} · ${q.points} pts</div>
-        <div class="q-text">${q.text}</div>
+        <div class="q-text">${escapeHtml(q.text)}</div>
         <textarea class="q-answer-area" placeholder="Write your answer here…" oninput="recordShort(${q.id},this.value)" rows="3"></textarea>
       </div>`;
     });
@@ -1102,43 +1087,86 @@ function updateProgress(){
   document.getElementById("exam-prog-fill").style.width = (done/total*100)+"%";
 }
 
-function submitExam(){
+async function submitExam(){
   if(timerInterval) clearInterval(timerInterval);
   if(!examData) return;
 
-  // Score MCQ questions
-  let correct=0, total=0, totalPts=0, earnedPts=0;
-  examData.questions.forEach(q=>{
-    total++;
-    totalPts += q.points;
-    if(q.type==="mcq"){
-      const ans = answers[q.id];
-      if(ans === q.correct){ correct++; earnedPts+=q.points; }
-      // Show correct/wrong
-      const qEl = document.getElementById("eq-"+q.id);
-      if(qEl){
-        qEl.querySelectorAll(".q-option").forEach(o=>{
-          const letter = o.textContent.trim()[0];
-          if(letter===q.correct) o.classList.add("correct");
-          else if(letter===ans && ans!==q.correct) o.classList.add("wrong");
-        });
+  const submitBtn = document.querySelector(".exam-submit-btn");
+  const originalLabel = submitBtn ? submitBtn.textContent : "";
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = "Grading with Gemini…"; }
+
+  // Convert answer ids to strings for the backend
+  const answerPayload = {};
+  Object.keys(answers).forEach(k => answerPayload[String(k)] = answers[k]);
+
+  let result;
+  try{
+    const res = await fetch(`${API}/exam/grade`, {
+      method:"POST", headers: authHeaders(),
+      body: JSON.stringify({exam: examData, answers: answerPayload, topic: examTopic, user_id: USER, token: TOKEN})
+    });
+    result = await res.json();
+    if(!result || result.error) throw new Error(result?.error || "grade failed");
+  } catch(e){
+    // Offline fallback: deterministic MCQ scoring only
+    let correct=0, totalPts=0, earnedPts=0;
+    examData.questions.forEach(q=>{
+      totalPts += q.points;
+      if(q.type==="mcq"){
+        if(answers[q.id]===q.correct){ correct++; earnedPts+=q.points; }
+      } else if(answers[q.id] && answers[q.id].length > 20){
+        earnedPts += Math.round(q.points*0.7); correct++;
       }
-    } else {
-      // Short answer — give partial credit if they wrote something
-      if(answers[q.id] && answers[q.id].length > 20){ earnedPts += Math.round(q.points*0.7); correct++; }
+    });
+    const pct = Math.round(earnedPts/Math.max(1,totalPts)*100);
+    const grade = pct>=90?"A":pct>=80?"B":pct>=70?"C":pct>=60?"D":"F";
+    result = {
+      score_percent: pct, grade, correct, total: examData.questions.length,
+      earned_points: earnedPts, total_points: totalPts,
+      message: pct>=80?"Excellent work!":pct>=60?"Good effort — keep studying!":"Keep practising — you'll get there!",
+      results: {}
+    };
+  }
+
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = originalLabel; }
+
+  // Highlight MCQ correctness in the exam paper
+  examData.questions.forEach(q=>{
+    if(q.type !== "mcq") return;
+    const ans = answers[q.id];
+    const qEl = document.getElementById("eq-"+q.id);
+    if(qEl){
+      qEl.querySelectorAll(".q-option").forEach(o=>{
+        const letter = o.textContent.trim()[0];
+        if(letter===q.correct) o.classList.add("correct");
+        else if(letter===ans && ans!==q.correct) o.classList.add("wrong");
+      });
     }
   });
 
-  const pct = Math.round(earnedPts/totalPts*100);
-  const grade = pct>=90?"A":pct>=80?"B":pct>=70?"C":pct>=60?"D":"F";
-  const msg = pct>=80?"Excellent work!":pct>=60?"Good effort — keep studying!":"Keep practising — you'll get there!";
-
-  document.getElementById("result-score").textContent = pct+"%";
-  document.getElementById("result-label").textContent = `Grade ${grade} — ${msg}`;
+  document.getElementById("result-score").textContent = result.score_percent+"%";
+  document.getElementById("result-label").textContent = `Grade ${result.grade} — ${result.message}`;
   document.getElementById("result-breakdown").innerHTML = `
-    <div class="result-stat"><div class="result-stat-val">${correct}/${total}</div><div class="result-stat-label">Correct</div></div>
-    <div class="result-stat"><div class="result-stat-val">${earnedPts}</div><div class="result-stat-label">Points earned</div></div>
-    <div class="result-stat"><div class="result-stat-val">${grade}</div><div class="result-stat-label">Grade</div></div>`;
+    <div class="result-stat"><div class="result-stat-val">${result.correct}/${result.total}</div><div class="result-stat-label">Correct</div></div>
+    <div class="result-stat"><div class="result-stat-val">${result.earned_points}</div><div class="result-stat-label">Points earned</div></div>
+    <div class="result-stat"><div class="result-stat-val">${result.grade}</div><div class="result-stat-label">Grade</div></div>`;
+
+  // AI feedback for short-answer questions
+  const feedbackEl = document.getElementById("result-feedback");
+  const shortFeedback = examData.questions
+    .filter(q => q.type === "short")
+    .map(q => ({q, r: (result.results||{})[String(q.id)]}))
+    .filter(({r}) => r);
+  feedbackEl.innerHTML = shortFeedback.length
+    ? `<div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">AI Feedback</div>` +
+      shortFeedback.map(({q,r}) => `
+        <div class="feedback-item ${r.is_correct ? "correct" : "wrong"}">
+          <div>
+            <div class="feedback-q">Q${q.id}: ${escapeHtml(q.text)}</div>
+            <div class="feedback-text">${escapeHtml(r.feedback || "")}</div>
+          </div>
+        </div>`).join("")
+    : "";
 
   document.getElementById("exam-paper").classList.remove("show");
   document.getElementById("exam-results").classList.add("show");
@@ -1148,7 +1176,7 @@ function submitExam(){
 function resetExam(){
   document.getElementById("exam-results").classList.remove("show");
   document.getElementById("exam-paper").classList.remove("show");
-  examData=null; answers={};
+  examData=null; answers={}; examTopic="";
   document.getElementById("exam-topic").value="";
 }
 
