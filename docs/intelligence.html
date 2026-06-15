@@ -1195,44 +1195,54 @@ async function loadWeakAreas(){
     const topics = data.topics || [];
     const weak   = data.weak_areas || [];
 
-    // Mastery breakdown
+    // Pull real per-concept mastery for every topic
+    const graphResults = await Promise.all(topics.map(t =>
+      fetch(`${API}/topic/graph`, {
+        method:"POST", headers: authHeaders(),
+        body: JSON.stringify({topic_id: t.topic_id, user_id: USER, token: TOKEN})
+      }).then(r=>r.json()).catch(()=>({nodes:[]}))
+    ));
+
     const allConcepts = [];
-    topics.forEach(t=>{
-      for(let i=0;i<4;i++){
-        allConcepts.push({
-          name: `${t.title} — ${["Intro","Core","Applied","Advanced"][i]}`,
-          mastery: Math.max(0, Math.round((t.mastery||0) - i*10 + (Math.random()*15-7))),
-          topic: t.title
-        });
-      }
+    topics.forEach((t,i)=>{
+      const nodes = (graphResults[i] && graphResults[i].nodes) || [];
+      nodes.forEach(n=>{
+        if(n.times_seen > 0){
+          allConcepts.push({name: n.label, mastery: n.mastery, topic: t.title});
+        }
+      });
     });
-    // Add actual weak areas
+
+    // Make sure backend-flagged weak areas are represented even if a topic's
+    // graph call failed for some reason
     weak.forEach(w=>{
-      const existing = allConcepts.find(c=>c.name.includes(w.concept));
+      const existing = allConcepts.find(c=>c.name===w.concept && c.topic===w.topic);
       if(!existing) allConcepts.push({name:w.concept, mastery:w.confidence, topic:w.topic});
     });
     allConcepts.sort((a,b)=>a.mastery-b.mastery);
 
-    // Render mastery bars
+    // Render mastery bars — real studied concepts only, weakest first
     document.getElementById("mastery-breakdown").innerHTML = allConcepts.slice(0,8).map(c=>{
       const color = c.mastery < 40 ? "#ef4444" : c.mastery < 70 ? "#f59e0b" : "#10b981";
+      const label = `${c.topic} — ${c.name}`;
       return `<div class="mastery-row">
-        <div class="mastery-concept" title="${c.name}">${c.name.length>22?c.name.slice(0,22)+"…":c.name}</div>
+        <div class="mastery-concept" title="${escapeHtml(label)}">${escapeHtml(label.length>32?label.slice(0,32)+"…":label)}</div>
         <div class="mastery-track"><div class="mastery-fill-bar" style="width:${c.mastery}%;background:${color}"></div></div>
         <div class="mastery-pct" style="color:${color}">${c.mastery}%</div>
       </div>`;
     }).join("") || `<div style="color:#9ca3af;font-size:13px">Study some topics first to see your mastery breakdown</div>`;
 
-    // Render weak items
-    const trueWeak = allConcepts.filter(c=>c.mastery<60).slice(0,5);
+    // Render weak items — straight from the backend's real weak_areas
+    // (confidence < 60% on concepts you've actually attempted)
+    const trueWeak = weak.map(w=>({name:w.concept, mastery:w.confidence, topic:w.topic}));
     document.getElementById("weak-items").innerHTML = trueWeak.length ? trueWeak.map(w=>`
-      <div class="weak-item-card" onclick="getRemediation('${w.name}','${w.topic}',${w.mastery})">
+      <div class="weak-item-card" onclick="getRemediation('${w.name.replace(/'/g,"\\'")}','${w.topic.replace(/'/g,"\\'")}',${w.mastery})">
         <div class="weak-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
         <div>
-          <div class="weak-concept-name">${w.name}</div>
-          <div class="weak-concept-meta">${w.topic} · Click to get remediation</div>
+          <div class="weak-concept-name">${escapeHtml(w.name)}</div>
+          <div class="weak-concept-meta">${escapeHtml(w.topic)} · Click to get remediation</div>
         </div>
         <div class="weak-score-badge">${w.mastery}%</div>
       </div>`).join("")
