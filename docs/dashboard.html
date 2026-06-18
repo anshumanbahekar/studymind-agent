@@ -273,7 +273,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="user-card">
       <div class="user-avatar">AB</div>
       <div class="user-card-info">
-        <div class="user-name">Anshuman B.</div>
+        <div class="user-name" id="sidebar-name">Anshuman B.</div>
         <div class="user-plan"><i class="ti ti-flame" style="font-size:12px"></i> <span id="streak-label">Loading…</span></div>
       </div>
     </div>
@@ -583,6 +583,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if(nameEl) nameEl.textContent = DNAME;
   const avatarEl = document.querySelector(".user-avatar");
   if(avatarEl) avatarEl.textContent = DNAME.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase();
+  const dateEl = document.getElementById("today-date");
+  if(dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, {weekday:"short", month:"short", day:"numeric"});
   buildHeatmap();
   refreshAll();
   document.getElementById("chatInput").addEventListener("keydown", e => { if(e.key==="Enter") sendMsg(); });
