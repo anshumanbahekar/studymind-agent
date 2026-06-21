@@ -439,38 +439,32 @@ async function generatePlan() {
   // Animate loading steps
   animateSteps();
 
+  let plan;
   try {
-    const prompt = buildPrompt(topic, level, time, weeks, goal, focus);
-    const res = await fetch(`${API}/chat`, {
+    const res = await fetch(`${API}/studyplan/generate`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        message: `Generate a detailed study plan. ${prompt}`,
+        topic, level, daily_mins: parseInt(time), weeks: parseInt(weeks), goal, focus,
         user_id: USER
       })
     });
 
-    // Use fallback plan generator if backend fails
-    let plan;
-    if (!res.ok) {
-      plan = generateFallbackPlan(topic, level, time, weeks, goal);
-    } else {
+    if (res.ok) {
       const data = await res.json();
-      plan = parsePlanFromResponse(data, topic, level, time, weeks, goal);
+      plan = (data && Array.isArray(data.weeks) && data.weeks.length) ? data : generateFallbackPlan(topic, level, time, weeks, goal);
+    } else {
+      plan = generateFallbackPlan(topic, level, time, weeks, goal);
     }
 
     renderPlan(plan);
   } catch(e) {
-    const plan = generateFallbackPlan(topic, level, time, weeks, goal);
+    plan = generateFallbackPlan(topic, level, time, weeks, goal);
     renderPlan(plan);
   }
 
   document.getElementById("gen-loading").classList.remove("show");
   document.getElementById("gen-btn").disabled = false;
-}
-
-function buildPrompt(topic, level, time, weeks, goal, focus) {
-  return `Topic: ${topic}, Level: ${level}, Daily time: ${time} minutes, Duration: ${weeks} weeks, Goal: ${goal}${focus ? ", Focus: " + focus : ""}`;
 }
 
 function animateSteps() {
@@ -549,20 +543,17 @@ function generateFallbackPlan(topic, level, time, weeks, goal) {
   };
 }
 
-function parsePlanFromResponse(data, topic, level, time, weeks, goal) {
-  // Backend returned something — use fallback plan but with real topic
-  return generateFallbackPlan(topic, level, time, weeks, goal);
-}
-
 // ─────────────────────────────────────────
 //  RENDER PLAN
 // ─────────────────────────────────────────
+function escHtml(t){return String(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
 function renderPlan(plan) {
   document.getElementById("out-title").textContent = plan.title;
   document.getElementById("out-desc").textContent  = plan.desc;
 
   document.getElementById("out-stats").innerHTML = plan.stats.map(s =>
-    `<div class="plan-stat"><i class="ti ${s.icon}"></i> ${s.label}</div>`
+    `<div class="plan-stat"><i class="ti ${s.icon}"></i> ${escHtml(s.label)}</div>`
   ).join("");
 
   document.getElementById("weeks-grid").innerHTML = plan.weeks.slice(0, 12).map((w, i) =>
@@ -570,19 +561,19 @@ function renderPlan(plan) {
       <div class="week-header">
         <div>
           <div class="week-num">Week ${w.week}</div>
-          <div class="week-title">${w.title}</div>
+          <div class="week-title">${escHtml(w.title)}</div>
         </div>
         <span class="week-badge">${w.days.length} days</span>
       </div>
       <div class="week-body">
         ${w.days.map(d => `
           <div class="day-item">
-            <div class="day-label">${d.day}</div>
+            <div class="day-label">${escHtml(d.day)}</div>
             <div class="day-content">
-              <div class="day-topic">${d.topic}</div>
-              <div class="day-detail">${d.detail}</div>
+              <div class="day-topic">${escHtml(d.topic)}</div>
+              <div class="day-detail">${escHtml(d.detail)}</div>
             </div>
-            <div class="day-time"><i class="ti ti-clock" style="font-size:10px"></i>${d.time}</div>
+            <div class="day-time"><i class="ti ti-clock" style="font-size:10px"></i>${escHtml(d.time)}</div>
           </div>`).join("")}
       </div>
     </div>`
@@ -594,8 +585,8 @@ function renderPlan(plan) {
         <i class="ti ${m.achieved ? "ti-check" : "ti-flag"}"></i>
       </div>
       <div class="m-content">
-        <div class="m-title">${m.title}</div>
-        <div class="m-desc">${m.desc}</div>
+        <div class="m-title">${escHtml(m.title)}</div>
+        <div class="m-desc">${escHtml(m.desc)}</div>
         <div class="m-week">Week ${m.week}</div>
       </div>
     </div>`
