@@ -224,24 +224,36 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .m-desc{font-size:12px;color:var(--text4);margin-top:2px}
 .m-week{font-size:11px;font-weight:600;color:var(--p500);margin-top:4px}
 
-/* Loading state */
+/* Loading state — continuous streaming "thinking" log */
 .gen-loading{
   display:none;text-align:center;padding:48px 24px;
 }
 .gen-loading.show{display:block}
 .gen-spinner{
-  width:48px;height:48px;border-radius:50%;
+  width:40px;height:40px;border-radius:50%;
   border:3px solid var(--p200);border-top-color:var(--p500);
   animation:spin 0.9s linear infinite;
-  margin:0 auto 16px;
+  margin:0 auto 18px;
 }
 .gen-loading-text{font-size:14px;color:var(--text3);font-weight:500}
-.gen-loading-sub{font-size:12px;color:var(--text4);margin-top:6px}
-.gen-steps{display:flex;flex-direction:column;gap:8px;margin-top:20px;text-align:left;max-width:320px;margin-left:auto;margin-right:auto}
-.gen-step{font-size:12px;color:var(--text4);display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px}
-.gen-step.active{background:var(--p50);color:var(--p600);font-weight:500}
-.gen-step.done{color:var(--green)}
-.gen-step i{font-size:13px}
+.gen-think-log{
+  margin:22px auto 0;max-width:420px;height:160px;overflow:hidden;
+  text-align:left;position:relative;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,black 24px,black calc(100% - 8px),transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,black 24px,black calc(100% - 8px),transparent 100%);
+}
+.gen-think-inner{display:flex;flex-direction:column;gap:7px;transition:transform 0.4s ease}
+.gen-think-line{
+  font-size:12.5px;color:var(--text4);display:flex;align-items:center;gap:8px;
+  opacity:0;animation:thinkLineIn 0.4s ease forwards;
+}
+.gen-think-line.current{color:var(--p600);font-weight:500}
+.gen-think-dot{width:5px;height:5px;border-radius:50%;background:var(--text4);flex-shrink:0;transition:background 0.3s}
+.gen-think-line.current .gen-think-dot{background:var(--p500);animation:thinkPulse 1s ease-in-out infinite}
+@keyframes thinkLineIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes thinkPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+.gen-cursor{display:inline-block;width:6px;height:13px;background:var(--p500);margin-left:2px;animation:cursorBlink 0.9s step-end infinite;vertical-align:middle}
+@keyframes cursorBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -360,13 +372,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <!-- Loading -->
     <div class="gen-loading" id="gen-loading">
       <div class="gen-spinner"></div>
-      <div class="gen-loading-text">Gemini is building your plan…</div>
-      <div class="gen-loading-sub">Analysing your goals and designing a week-by-week roadmap</div>
-      <div class="gen-steps">
-        <div class="gen-step active" id="step1"><i class="ti ti-loader"></i> Analysing topic depth and prerequisites</div>
-        <div class="gen-step" id="step2"><i class="ti ti-calendar"></i> Designing weekly schedule</div>
-        <div class="gen-step" id="step3"><i class="ti ti-cards"></i> Planning flashcard batches</div>
-        <div class="gen-step" id="step4"><i class="ti ti-database"></i> Preparing MongoDB ingestion</div>
+      <div class="gen-loading-text" id="gen-loading-text">Gemini is building your plan…</div>
+      <div class="gen-think-log">
+        <div class="gen-think-inner" id="gen-think-inner"></div>
       </div>
     </div>
 
@@ -469,8 +477,9 @@ async function generatePlan() {
   document.getElementById("gen-loading").classList.add("show");
   document.getElementById("plan-output").classList.remove("show");
 
-  // Animate loading steps
-  animateSteps();
+  // Start the streaming "thinking" log — keeps going for as long as the
+  // real request takes, not on a fixed timer.
+  startThinking();
 
   let plan;
   try {
@@ -490,8 +499,10 @@ async function generatePlan() {
       plan = generateFallbackPlan(topic, level, time, weeks, goal);
     }
 
+    stopThinking();
     renderPlan(plan);
   } catch(e) {
+    stopThinking();
     plan = generateFallbackPlan(topic, level, time, weeks, goal);
     renderPlan(plan);
   }
@@ -500,22 +511,74 @@ async function generatePlan() {
   document.getElementById("gen-btn").disabled = false;
 }
 
-function animateSteps() {
-  const steps = ["step1","step2","step3","step4"];
-  let i = 0;
-  const interval = setInterval(() => {
-    if (i > 0) {
-      document.getElementById(steps[i-1]).classList.remove("active");
-      document.getElementById(steps[i-1]).classList.add("done");
-      document.getElementById(steps[i-1]).querySelector("i").className = "ti ti-check";
+// Continuous "thinking" log — mimics how Claude/Gemini/Codex show live progress.
+// Keeps streaming new lines for as long as the real request takes; never
+// finishes early. Call stopThinking() when the actual response arrives.
+const THINK_LINES = [
+  "Reading your goal and current level…",
+  "Mapping out prerequisite topics…",
+  "Sketching the week-by-week phases…",
+  "Sequencing concepts from foundational to advanced…",
+  "Drafting daily focus areas…",
+  "Balancing study load across the week…",
+  "Writing specific activities for each day…",
+  "Placing review and practice days…",
+  "Identifying natural checkpoint moments…",
+  "Defining milestones and what mastery looks like…",
+  "Cross-checking the plan against your goal…",
+  "Refining day-by-day detail…",
+  "Finalising week titles and structure…",
+  "Polishing the plan before handing it back…",
+];
+
+let thinkInterval = null;
+let thinkTimeout = null;
+
+function startThinking(){
+  const container = document.getElementById("gen-think-inner");
+  container.innerHTML = "";
+  let shown = [];
+  let idx = 0;
+
+  function pushLine(){
+    // Demote the previous "current" line to a normal completed line
+    const prevCurrent = container.querySelector(".gen-think-line.current");
+    if(prevCurrent){
+      prevCurrent.classList.remove("current");
+      prevCurrent.innerHTML = `<span class="gen-think-dot"></span>${prevCurrent.dataset.text}`;
     }
-    if (i < steps.length) {
-      document.getElementById(steps[i]).classList.add("active");
-      i++;
-    } else {
-      clearInterval(interval);
+
+    const text = THINK_LINES[idx % THINK_LINES.length];
+    idx++;
+
+    const line = document.createElement("div");
+    line.className = "gen-think-line current";
+    line.dataset.text = text;
+    line.innerHTML = `<span class="gen-think-dot"></span>${text}<span class="gen-cursor"></span>`;
+    container.appendChild(line);
+    shown.push(line);
+
+    // Keep only the last 5 lines so the log doesn't grow forever
+    while(shown.length > 5){
+      const old = shown.shift();
+      old.remove();
     }
-  }, 900);
+  }
+
+  pushLine();
+  // Natural, slightly irregular pacing (1.1s-2.1s) rather than a robotic fixed tick
+  function scheduleNext(){
+    const delay = 1100 + Math.random() * 1000;
+    thinkTimeout = setTimeout(() => { pushLine(); scheduleNext(); }, delay);
+  }
+  scheduleNext();
+}
+
+function stopThinking(){
+  if(thinkTimeout) clearTimeout(thinkTimeout);
+  if(thinkInterval) clearInterval(thinkInterval);
+  thinkTimeout = null;
+  thinkInterval = null;
 }
 
 // ─────────────────────────────────────────
