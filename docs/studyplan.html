@@ -304,7 +304,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <main class="main">
   <header class="topbar">
     <span class="page-title">AI Study Plan Generator</span>
-    <a class="back-btn" href="dashboard.html"><i class="ti ti-arrow-left"></i> Back to Dashboard</a>
+    <a class="back-btn" href="dashboard.html"><img src="https://cdn-icons-png.flaticon.com/128/7915/7915208.png" style="width:14px;height:14px;object-fit:contain"> Back to Dashboard</a>
   </header>
 
   <div class="content">
@@ -365,7 +365,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       </div>
 
       <button class="generate-btn" id="gen-btn" onclick="generatePlan()">
-        <i class="ti ti-sparkles"></i> Generate My Study Plan
+        <img src="https://cdn-icons-png.flaticon.com/128/16921/16921802.png" style="width:16px;height:16px;object-fit:contain;vertical-align:-3px"> Generate My Study Plan
       </button>
     </div>
 
@@ -389,10 +389,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
         <div class="plan-actions">
           <button class="action-btn primary" onclick="ingestAllTopics()">
-            <i class="ti ti-rocket"></i> Start This Plan
+            <img src="https://cdn-icons-png.flaticon.com/128/12866/12866012.png" style="width:15px;height:15px;object-fit:contain;vertical-align:-3px"> Start This Plan
           </button>
           <button class="action-btn secondary" onclick="window.print()">
-            <i class="ti ti-download"></i> Export PDF
+            <img src="https://cdn-icons-png.flaticon.com/128/11243/11243716.png" style="width:15px;height:15px;object-fit:contain;vertical-align:-3px"> Export PDF
           </button>
         </div>
       </div>
@@ -401,7 +401,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
       <div class="progress-track-card">
         <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px">
-          <i class="ti ti-flag" style="color:var(--p500)"></i> Milestones
+          <img src="https://cdn-icons-png.flaticon.com/128/4808/4808442.png" style="width:16px;height:16px;object-fit:contain"> Milestones
         </div>
         <div class="milestones" id="milestones"></div>
       </div>
@@ -648,9 +648,17 @@ function renderPlan(plan) {
   document.getElementById("out-title").textContent = plan.title;
   document.getElementById("out-desc").textContent  = plan.desc;
 
-  document.getElementById("out-stats").innerHTML = plan.stats.map(s =>
-    `<div class="plan-stat"><i class="ti ${s.icon}"></i> ${escHtml(s.label)}</div>`
-  ).join("");
+  const STAT_ICON_MAP = {
+    "ti-calendar": "https://cdn-icons-png.flaticon.com/128/4594/4594149.png",
+    "ti-clock": "https://cdn-icons-png.flaticon.com/128/896/896354.png",
+  };
+  document.getElementById("out-stats").innerHTML = plan.stats.map(s => {
+    const img = STAT_ICON_MAP[s.icon];
+    const iconHtml = img
+      ? `<img src="${img}" style="width:14px;height:14px;object-fit:contain;vertical-align:-2px">`
+      : `<i class="ti ${s.icon}"></i>`;
+    return `<div class="plan-stat">${iconHtml} ${escHtml(s.label)}</div>`;
+  }).join("");
 
   document.getElementById("weeks-grid").innerHTML = plan.weeks.slice(0, 12).map((w, i) =>
     `<div class="week-card" style="animation-delay:${i*0.06}s">
@@ -669,7 +677,7 @@ function renderPlan(plan) {
               <div class="day-topic">${escHtml(d.topic)}</div>
               <div class="day-detail">${escHtml(d.detail)}</div>
             </div>
-            <div class="day-time"><i class="ti ti-clock" style="font-size:10px"></i>${escHtml(d.time)}</div>
+            <div class="day-time"><img src="https://cdn-icons-png.flaticon.com/128/896/896354.png" style="width:10px;height:10px;object-fit:contain;vertical-align:-1px">${escHtml(d.time)}</div>
           </div>`).join("")}
       </div>
     </div>`
@@ -678,7 +686,7 @@ function renderPlan(plan) {
   document.getElementById("milestones").innerHTML = plan.milestones.map((m, i) =>
     `<div class="milestone">
       <div class="m-dot ${m.achieved ? "" : i === 0 ? "" : "dim"}">
-        <i class="ti ${m.achieved ? "ti-check" : "ti-flag"}"></i>
+        <img src="${m.achieved ? "https://cdn-icons-png.flaticon.com/128/14090/14090371.png" : "https://cdn-icons-png.flaticon.com/128/4808/4808442.png"}" style="width:13px;height:13px;object-fit:contain">
       </div>
       <div class="m-content">
         <div class="m-title">${escHtml(m.title)}</div>
@@ -702,7 +710,7 @@ async function ingestAllTopics() {
 
   const btn = document.querySelector(".action-btn.primary");
   btn.disabled = true;
-  btn.innerHTML = `<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Ingesting into StudyMind…`;
+  btn.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/128/18762/18762089.png" style="width:15px;height:15px;object-fit:contain;vertical-align:-3px;animation:spin 1s linear infinite"> Ingesting into StudyMind…`;
 
   try {
     const res = await fetch(`${API}/ingest`, {
@@ -711,12 +719,12 @@ async function ingestAllTopics() {
       body: JSON.stringify({topic: plan.title.split("—")[0].trim(), user_id: USER})
     });
     const data = await res.json();
-    btn.innerHTML = `<i class="ti ti-check"></i> Added to Dashboard!`;
+    btn.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/128/14090/14090371.png" style="width:15px;height:15px;object-fit:contain;vertical-align:-3px"> Added to Dashboard!`;
     btn.style.background = "linear-gradient(135deg,#059669,#047857)";
     setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
   } catch(e) {
     btn.disabled = false;
-    btn.innerHTML = `<i class="ti ti-rocket"></i> Start This Plan`;
+    btn.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/128/12866/12866012.png" style="width:15px;height:15px;object-fit:contain;vertical-align:-3px"> Start This Plan`;
   }
 }
 </script>
