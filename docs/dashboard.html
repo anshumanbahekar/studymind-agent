@@ -205,6 +205,27 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 .heatmap{display:flex;flex-wrap:wrap;gap:3px}
 .heat-cell{width:12px;height:12px;border-radius:3px;background:var(--bg4)}
+
+/* ── Review Forecast (inside Study Activity panel) ── */
+.forecast-divider{height:1px;background:var(--border);margin:18px 0 14px}
+.forecast-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.forecast-title{font-size:12.5px;font-weight:600;color:var(--text)}
+.forecast-range{display:flex;gap:4px;background:var(--bg3);padding:2px;border-radius:8px}
+.forecast-range-btn{padding:3px 9px;border-radius:6px;border:none;background:none;font-size:11px;font-weight:600;color:var(--text4);cursor:pointer;font-family:var(--font-body);transition:all 0.15s}
+.forecast-range-btn.active{background:#fff;color:var(--p600);box-shadow:0 1px 2px rgba(109,40,217,0.1)}
+.forecast-chart{display:flex;align-items:flex-end;gap:4px;height:72px;padding-top:4px}
+.forecast-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:5px;min-width:0}
+.forecast-bar{width:100%;max-width:22px;border-radius:4px 4px 2px 2px;background:var(--p200);transition:height 0.4s ease,background 0.15s;position:relative;min-height:2px}
+.forecast-bar.has-cards{background:linear-gradient(180deg,var(--p400),var(--p600))}
+.forecast-bar.today{background:linear-gradient(180deg,var(--amber),#b45309)}
+.forecast-bar-col:hover .forecast-bar{opacity:0.85}
+.forecast-bar-label{font-size:9.5px;color:var(--text4);white-space:nowrap;font-weight:500}
+.forecast-bar-col.today .forecast-bar-label{color:var(--amber);font-weight:700}
+.forecast-summary{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.forecast-stat{font-size:11px;color:var(--text3)}
+.forecast-stat strong{color:var(--text);font-weight:700}
+.forecast-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:10.5px;font-weight:600;padding:4px 7px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.15s;z-index:5}
+.forecast-bar-col:hover .forecast-tooltip{opacity:1}
 .heat-cell.l1{background:rgba(168,85,247,0.18)}.heat-cell.l2{background:rgba(168,85,247,0.38)}.heat-cell.l3{background:rgba(168,85,247,0.62)}.heat-cell.l4{background:var(--p500)}
 
 /* ── AGENT ACTIVITY DRAWER ── */
@@ -454,6 +475,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div class="heat-cell l3"></div>16–30</div>
             <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div class="heat-cell l4"></div>30+</div>
           </div>
+
+          <div class="forecast-divider"></div>
+          <div class="forecast-header">
+            <div class="forecast-title">Review Forecast</div>
+            <div class="forecast-range">
+              <button class="forecast-range-btn active" data-days="7" onclick="setForecastRange(7,this)">7d</button>
+              <button class="forecast-range-btn" data-days="14" onclick="setForecastRange(14,this)">14d</button>
+              <button class="forecast-range-btn" data-days="30" onclick="setForecastRange(30,this)">30d</button>
+            </div>
+          </div>
+          <div class="forecast-chart" id="forecast-chart"></div>
+          <div class="forecast-summary" id="forecast-summary"></div>
         </div>
       </div>
 
@@ -635,7 +668,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => loader.classList.add("hidden"), wait);
   }
 
-  Promise.all([buildHeatmap(), refreshAll()]).finally(hideLoader);
+  Promise.all([buildHeatmap(), refreshAll(), loadForecast()]).finally(hideLoader);
   setTimeout(hideLoader, MAX_LOADER_MS); // safety net — never trap the user behind the loader
 });
 
@@ -960,6 +993,104 @@ async function buildHeatmap(){
       hm.appendChild(c);
     }
   }
+}
+
+// ── REVIEW FORECAST (real data from /review/forecast) ──
+let forecastRangeDays = 7;
+
+async function loadForecast(days){
+  if(days) forecastRangeDays = days;
+  const chartEl = document.getElementById("forecast-chart");
+  const summaryEl = document.getElementById("forecast-summary");
+  try{
+    const res = await fetch(`${API}/review/forecast?user_id=${USER}&token=${TOKEN}&days=${forecastRangeDays}`, {headers: authHeaders()});
+    const data = await res.json();
+    renderForecastChart(data.days || [], forecastRangeDays);
+
+    const total = data.total_upcoming || 0;
+    const overdue = data.overdue_today || 0;
+    const parts = [`<div class="forecast-stat"><strong>${total}</strong> cards due in ${forecastRangeDays} days</div>`];
+    if(overdue > 0) parts.push(`<div class="forecast-stat" style="color:var(--amber)"><strong>${overdue}</strong> overdue</div>`);
+    if(data.busiest_day){
+      const label = new Date(data.busiest_day+"T00:00:00").toLocaleDateString(undefined,{weekday:"long"});
+      parts.push(`<div class="forecast-stat">Busiest: <strong>${label}</strong></div>`);
+    }
+    summaryEl.innerHTML = total > 0 ? parts.join("") : `<div class="forecast-stat">All clear — nothing scheduled yet</div>`;
+  }catch(e){
+    chartEl.innerHTML = `<div style="font-size:11px;color:var(--text4);margin:auto">Could not load forecast</div>`;
+    summaryEl.innerHTML = "";
+  }
+}
+
+function renderForecastChart(days, rangeDays){
+  const chartEl = document.getElementById("forecast-chart");
+  chartEl.innerHTML = "";
+  if(!days.length) return;
+
+  // Collapse to weekly buckets when showing 30 days so bars stay readable
+  const collapse = rangeDays > 14;
+  let buckets;
+  if(collapse){
+    buckets = collapseToWeeks(days);
+  } else {
+    buckets = days.map((d, i) => {
+      const dateObj = new Date(d.date+"T00:00:00");
+      return {
+        count: d.count || 0,
+        isToday: i === 0,
+        label: dateObj.toLocaleDateString(undefined,{weekday:"long", month:"short", day:"numeric"}),
+        shortLabel: i === 0 ? "Today" : d.weekday,
+      };
+    });
+  }
+  const bucketMax = Math.max(1, ...buckets.map(b => b.count));
+
+  buckets.forEach(b => {
+    const col = document.createElement("div");
+    col.className = "forecast-bar-col" + (b.isToday ? " today" : "");
+
+    const pct = Math.round((b.count / bucketMax) * 100);
+    const heightPct = b.count > 0 ? Math.max(8, pct) : 3;
+
+    const bar = document.createElement("div");
+    bar.className = "forecast-bar" + (b.count > 0 ? " has-cards" : "") + (b.isToday ? " today" : "");
+    bar.style.height = heightPct + "%";
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "forecast-tooltip";
+    tooltip.textContent = `${b.label} — ${b.count} card${b.count===1?"":"s"}`;
+    bar.appendChild(tooltip);
+
+    const label = document.createElement("div");
+    label.className = "forecast-bar-label";
+    label.textContent = b.shortLabel;
+
+    col.appendChild(bar);
+    col.appendChild(label);
+    chartEl.appendChild(col);
+  });
+}
+
+function collapseToWeeks(days){
+  const weeks = [];
+  for(let i = 0; i < days.length; i += 7){
+    const chunk = days.slice(i, i+7);
+    const count = chunk.reduce((s,d) => s + (d.count||0), 0);
+    const startLabel = new Date(chunk[0].date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    weeks.push({
+      count,
+      isToday: i === 0,
+      label: `Week of ${startLabel}`,
+      shortLabel: i === 0 ? "This wk" : `Wk ${Math.floor(i/7)+1}`,
+    });
+  }
+  return weeks;
+}
+
+function setForecastRange(days, btn){
+  document.querySelectorAll(".forecast-range-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  loadForecast(days);
 }
 
 // ── TOAST ──
