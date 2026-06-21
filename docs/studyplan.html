@@ -40,14 +40,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .nav-section-label{font-size:9.5px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:1.2px;padding:14px 10px 6px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;font-size:13.5px;color:#4b5563;border:none;background:none;width:100%;text-align:left;transition:all 0.15s;font-family:var(--font-body)}
 .nav-item i{font-size:17px;opacity:0.6}
+.nav-icon-img{width:17px;height:17px;object-fit:contain;flex-shrink:0}
 .nav-item:hover{background:var(--p50);color:var(--p700)}
 .nav-item.active{background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(139,92,246,0.07));color:var(--p700);font-weight:500;border:1px solid rgba(168,85,247,0.15)}
 .nav-item.active i{opacity:1}
+.nav-item.danger:hover{background:var(--red-bg, #fef2f2);color:#dc2626}
+.sidebar-divider{height:1px;background:var(--border);margin:12px 10px}
 .sidebar-footer{padding:16px;border-top:1px solid var(--border)}
 .user-card{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;background:linear-gradient(135deg,var(--p50),rgba(233,213,255,0.4));border:1px solid var(--border)}
-.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--p400),var(--p700));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
-.user-name{font-size:13px;font-weight:600;color:var(--text)}
-.user-plan{font-size:11px;color:var(--p600)}
+.user-card-info{min-width:0;flex:1}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--p400),var(--p700));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(139,92,246,0.3)}
+.user-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-plan{font-size:11px;color:var(--p600);margin-top:1px;display:flex;align-items:center;gap:5px}
 
 /* Main */
 .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;z-index:1}
@@ -260,19 +264,26 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label">Workspace</div>
-    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
-    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-books"></i> My Topics</button>
-    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-cards"></i> Flashcards</button>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><img src="https://cdn-icons-png.flaticon.com/128/13312/13312999.png" class="nav-icon-img"> Dashboard</button>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><img src="https://cdn-icons-png.flaticon.com/128/13487/13487775.png" class="nav-icon-img"> My Topics</button>
+
+    <div class="nav-section-label">Study</div>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><img src="https://cdn-icons-png.flaticon.com/128/12277/12277264.png" class="nav-icon-img"> Flashcards</button>
+    <button class="nav-item active"><img src="https://cdn-icons-png.flaticon.com/128/149/149060.png" class="nav-icon-img"> Study Plan</button>
+
     <div class="nav-section-label">Intelligence</div>
-    <button class="nav-item active"><i class="ti ti-map"></i> Study Plan</button>
-    <button class="nav-item" onclick="location.href='dashboard.html'"><i class="ti ti-chart-dots"></i> Analytics</button>
+    <a class="nav-item" href="intelligence.html" style="text-decoration:none;display:flex"><img src="https://cdn-icons-png.flaticon.com/128/16921/16921802.png" class="nav-icon-img"> Intelligence Hub</a>
+
+    <div class="sidebar-divider"></div>
+    <button class="nav-item" onclick="location.href='dashboard.html'"><img src="https://cdn-icons-png.flaticon.com/128/3208/3208743.png" class="nav-icon-img"> Refresh data</button>
+    <button class="nav-item danger" onclick="doLogout()" style="color:#dc2626"><img src="https://cdn-icons-png.flaticon.com/128/1828/1828490.png" class="nav-icon-img"> Logout</button>
   </nav>
   <div class="sidebar-footer">
     <div class="user-card">
       <div class="user-avatar" id="sidebar-avatar">AB</div>
-      <div>
+      <div class="user-card-info">
         <div class="user-name" id="sidebar-name">Anshuman B.</div>
-        <div class="user-plan">Pro · AI Study Plan</div>
+        <div class="user-plan"><img src="https://cdn-icons-png.flaticon.com/128/599/599502.png" style="width:13px;height:13px;object-fit:contain"> <span id="streak-label">Loading…</span></div>
       </div>
     </div>
   </div>
@@ -393,18 +404,40 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </main>
 
 <script>
-const API  = "https://simple-python-script--anshumanbahekar.replit.app";
-const USER = "anshuman";
+const API   = "https://simple-python-script--anshumanbahekar.replit.app";
+const TOKEN = localStorage.getItem("sm_token") || "";
+const USER  = localStorage.getItem("sm_user_id") || "guest";
+const DNAME = localStorage.getItem("sm_display_name") || "Guest";
 
-// Load user from localStorage
+if (!TOKEN) window.location.href = "index.html";
+
+function authHeaders() {
+  return {"Content-Type":"application/json","Authorization":"Bearer "+TOKEN};
+}
+
+// Populate sidebar user card
 window.addEventListener("DOMContentLoaded", () => {
-  const u = localStorage.getItem("studymind_user");
-  if (u) {
-    const user = JSON.parse(u);
-    document.getElementById("sidebar-name").textContent = user.name?.split(" ")[0] + " " + (user.name?.split(" ")[1]?.[0] || "") + ".";
-    document.getElementById("sidebar-avatar").textContent = user.name?.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase() || "AB";
-  }
+  const nameEl = document.getElementById("sidebar-name");
+  if(nameEl) nameEl.textContent = DNAME;
+  const avatarEl = document.getElementById("sidebar-avatar");
+  if(avatarEl) avatarEl.textContent = DNAME.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase();
+
+  fetch(`${API}/progress?user_id=${USER}&token=${TOKEN}`, {headers: authHeaders()})
+    .then(r => r.json())
+    .then(data => {
+      const streakEl = document.getElementById("streak-label");
+      if(streakEl) streakEl.textContent = `${data.streak_days||0}-day streak`;
+    })
+    .catch(() => {
+      const streakEl = document.getElementById("streak-label");
+      if(streakEl) streakEl.textContent = "—";
+    });
 });
+
+async function doLogout(){
+  await fetch(API+"/auth/logout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:TOKEN})}).catch(()=>{});
+  localStorage.clear();window.location.href="index.html";
+}
 
 // Goal tag selection
 document.querySelectorAll(".goal-tag").forEach(tag => {
