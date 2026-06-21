@@ -164,8 +164,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .agent-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 15px;color:var(--text);font-size:13px;font-family:var(--font-body);outline:none;transition:all 0.15s}
 .agent-input:focus{border-color:var(--p400);background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,0.08)}
 .agent-input::placeholder{color:var(--text4)}
-.agent-send{width:38px;height:38px;border-radius:var(--radius);background:linear-gradient(135deg,var(--p500),var(--p700));border:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;cursor:pointer;transition:all 0.15s;flex-shrink:0;box-shadow:0 3px 10px rgba(139,92,246,0.35)}
-.agent-send:hover{transform:scale(1.06);box-shadow:0 4px 16px rgba(139,92,246,0.45)}
+.agent-send{width:38px;height:38px;border-radius:var(--radius);background:none;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
+.agent-send:hover{transform:scale(1.08)}
 
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(88,28,135,0.2);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center}
@@ -210,11 +210,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 /* ── AGENT ACTIVITY DRAWER ── */
 .logs-fab{
   position:fixed;bottom:24px;right:24px;z-index:200;
-  width:48px;height:48px;border-radius:50%;
-  background:linear-gradient(135deg,var(--p500),var(--p700));
-  border:none;color:#fff;font-size:19px;cursor:pointer;
+  width:50px;height:50px;border-radius:50%;
+  background:#fff;border:1px solid var(--border2);
+  cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 20px rgba(124,58,237,0.35);
+  box-shadow:var(--shadow-lg);
   transition:transform 0.15s;
 }
 .logs-fab:hover{transform:translateY(-2px) scale(1.04)}
@@ -408,7 +408,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <!-- Agent chat -->
       <div class="agent-panel">
         <div class="agent-header">
-          <div class="agent-avatar"><img src="https://cdn-icons-png.flaticon.com/128/1006/1006195.png" style="width:19px;height:19px;object-fit:contain"></div>
+          <img src="https://cdn-icons-png.flaticon.com/128/1006/1006195.png" style="width:34px;height:34px;object-fit:contain;flex-shrink:0">
           <div>
             <div class="agent-name">StudyMind Agent</div>
             <div class="agent-status" id="agent-status-text">Online · Gemini Flash</div>
@@ -433,7 +433,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       </div>
       <div class="agent-input-row">
           <input class="agent-input" id="chatInput" type="text" placeholder="Ask me anything…" />
-          <button class="agent-send" id="sendBtn" onclick="sendMsg()"><img src="https://cdn-icons-png.flaticon.com/128/12320/12320134.png" alt="" style="width:18px;height:18px;object-fit:contain"></button>
+          <button class="agent-send" id="sendBtn" onclick="sendMsg()"><img src="https://cdn-icons-png.flaticon.com/128/12320/12320134.png" alt="" style="width:24px;height:24px;object-fit:contain"></button>
         </div>
       </div>
 
@@ -487,7 +487,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- Agent Activity floating drawer (MongoDB MCP live calls) -->
 <button class="logs-fab" id="logs-fab" onclick="toggleLogDrawer()" title="Agent Activity — Live MongoDB MCP Calls">
-  <img src="https://cdn-icons-png.flaticon.com/128/9672/9672290.png" style="width:22px;height:22px;object-fit:contain">
+  <img src="https://cdn-icons-png.flaticon.com/128/9672/9672290.png" style="width:25px;height:25px;object-fit:contain">
   <div class="fab-dot" id="logs-fab-dot"></div>
 </button>
 <div class="logs-drawer" id="logs-drawer">
