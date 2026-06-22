@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.19.0/fonts/tabler-icons.min.css"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -683,6 +682,8 @@ function renderPlan(plan) {
   const STAT_ICON_MAP = {
     "ti-calendar": "https://cdn-icons-png.flaticon.com/128/4594/4594149.png",
     "ti-clock": "https://cdn-icons-png.flaticon.com/128/896/896354.png",
+    "ti-cards": "https://cdn-icons-png.flaticon.com/128/12277/12277264.png",
+    "ti-target": "https://cdn-icons-png.flaticon.com/128/3176/3176382.png",
   };
   document.getElementById("out-stats").innerHTML = plan.stats.map(s => {
     const img = STAT_ICON_MAP[s.icon];
