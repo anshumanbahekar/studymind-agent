@@ -1,200 +1,236 @@
-<div align="center">
-
-<img src="https://img.shields.io/badge/StudyMind-AI%20Study%20Agent-7c3aed?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNOS41IDJBOS41IDIuNSAwIDAgMSAxMiA0LjV2MTVhMi41IDIuNSAwIDAgMS00Ljk2LS40NiAyLjUgMi41IDAgMCAxLTIuOTYtMy4wOCAzIDMgMCAwIDEtLjM0LTUuNTggMi41IDIuNSAwIDAgMSAxLjMyLTQuMjQgMi41IDIuNSAwIDAgMSAxLjk4LTNAOS41IDJaIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+" />
-
 # StudyMind — AI Study Agent
 
-**An intelligent study agent that teaches you, quizzes you, and adapts to how you learn.**
+> A multi-agent study application that learns how you learn. Generates personalised flashcards, adapts review schedules using spaced repetition (SM-2), teaches concepts three ways, runs AI-graded exams, and forecasts your upcoming review workload — all backed by real data from MongoDB Atlas.
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=flat-square)](https://anshumanbahekar.github.io/studymind-agent)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
-[![MongoDB](https://img.shields.io/badge/Partner-MongoDB%20Atlas-00ED64?style=flat-square&logo=mongodb)](https://www.mongodb.com/atlas)
-[![Gemini](https://img.shields.io/badge/Powered%20by-Gemini%202.5-4285F4?style=flat-square&logo=google)](https://aistudio.google.com)
-[![Python](https://img.shields.io/badge/Backend-Python%20Flask-3776AB?style=flat-square&logo=python)](https://flask.palletsprojects.com)
+Built for the **MongoDB Atlas Hackathon** and as a portfolio project for undergraduate applications.
 
-[**Live App**](https://anshumanbahekar.github.io/studymind-agent) · [**Demo Video**](#) · [**Architecture**](#architecture)
-
-</div>
-
----
-
-## What is StudyMind?
-
-StudyMind is a multi-agent AI system that moves far beyond a chatbot. You give it a topic — it teaches the concept in three modes (explain, lesson, or Socratic), generates flashcards, quizzes you using active recall, evaluates your answers with Gemini, schedules future reviews with the SM-2 spaced repetition algorithm, detects your weak areas, and generates personalised remediation plans.
-
-**Every agent action reads or writes MongoDB Atlas via MCP. The database is not cosmetic — it is the intelligence layer.**
+**Live demo:** [anshumanbahekar.github.io/studymind-agent](https://anshumanbahekar.github.io/studymind-agent)  
+**Backend:** Flask API on Replit — [simple-python-script--anshumanbahekar.replit.app](https://simple-python-script--anshumanbahekar.replit.app)
 
 ---
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        USER (Browser)                       │
-│              GitHub Pages — React/HTML Frontend             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ REST API
-┌──────────────────────────▼──────────────────────────────────┐
-│                   ORCHESTRATOR AGENT                        │
-│              Flask · Intent Detection · Routing             │
-└────┬──────────────┬─────────────┬──────────────┬────────────┘
-     │              │             │              │
-┌────▼────┐  ┌──────▼──────┐ ┌───▼────┐  ┌──────▼──────┐
-│INGESTOR │  │   TEACHER   │ │ TUTOR  │  │  PROGRESS   │
-│  AGENT  │  │    AGENT    │ │ AGENT  │  │    AGENT    │
-│         │  │             │ │        │  │             │
-│Gemini → │  │3 teach modes│ │SM-2 +  │  │Aggregation  │
-│concepts │  │Explain      │ │Answer  │  │pipelines +  │
-│+cards   │  │Lesson       │ │eval +  │  │Weak area    │
-│→MongoDB │  │Socratic     │ │Cache   │  │detection    │
-└────┬────┘  └──────┬──────┘ └───┬────┘  └──────┬──────┘
-     │              │             │              │
-     └──────────────┴─────────────┴──────────────┘
-                           │
-              ┌────────────▼────────────┐
-              │    MongoDB Atlas MCP    │
-              │                         │
-              │  topics · concepts      │
-              │  flashcards · sessions  │
-              │  users · eval_cache     │
-              └─────────────────────────┘
-```
+```mermaid
+graph TD
+    subgraph Frontend["Frontend — GitHub Pages (Static HTML/JS)"]
+        A[index.html\nLogin / Register]
+        B[dashboard.html\nChat · Progress · Heatmap · Forecast]
+        C[topic.html\nFlashcards · Notes Library]
+        D[intelligence.html\nKnowledge Graph · AI Exam · Weak Areas · Study DNA]
+        E[studyplan.html\nAI Study Plan Generator]
+    end
 
----
+    subgraph Backend["Backend — Flask API on Replit"]
+        F[main.py\nOrchestrator / Router]
 
-## MongoDB MCP Integration
+        subgraph Agents["Agents"]
+            G[Ingestor\nTopic → Concepts → Flashcards]
+            H[Teacher\nExplain · Lesson · Socratic]
+            I[Tutor\nSM-2 Spaced Repetition]
+            J[Progress\nMastery · Streak · Weak Areas · Heatmap · Forecast]
+            K[Exam\nGenerate · Grade with AI]
+            L[StudyPlan\nWeek-by-week AI plan]
+            M[RAG\nVector search over user notes]
+            N[Adaptive\nSkill profiling]
+            O[Auth\nSession management]
+        end
 
-This is the core of the submission. Every agent action goes through the MongoDB MCP layer. Here are the key tool calls:
+        subgraph Gemini["Gemini 2.5 Flash — 50-key rotation"]
+            P[generate_content\nTeaching · Exam · Plans · Grading]
+            Q[embed_content\ntext-embedding-004 for RAG]
+        end
+    end
 
-| Tool | Agent | Purpose |
-|---|---|---|
-| `mongodb_insert_one` | Ingestor | Store new topic document |
-| `mongodb_insert_many` | Ingestor | Bulk insert flashcards |
-| `mongodb_find` | Tutor | Fetch due cards sorted by confidence |
-| `mongodb_update_one` | Tutor | Write SM-2 scores after each answer |
-| `mongodb_aggregate` | Progress | Compute mastery, weak areas, streak |
-| `mongodb_find_one` | Tutor | Cache lookup for instant evaluation |
-| `mongodb_insert_one` | Tutor | Store evaluation in `eval_cache` |
+    subgraph DB["MongoDB Atlas"]
+        R[(topics\nconcepts\nflashcards)]
+        S[(quiz_sessions\nnote_chunks)]
+        T[Atlas Vector Search\n768-dim embeddings]
+    end
 
-### Example — SM-2 update written to Atlas after every answer
-
-```json
-{
-  "$set": {
-    "confidence_score": 0.72,
-    "ease_factor": 2.6,
-    "interval_days": 6,
-    "next_review_at": "2026-06-14T00:00:00Z"
-  },
-  "$inc": { "times_seen": 1 }
-}
-```
-
-### Example — Weak area detection pipeline
-
-```js
-db.flashcards.aggregate([
-  { $match: { user_id: uid, times_seen: { $gt: 0 } } },
-  { $group: { _id: "$concept_id", avg_confidence: { $avg: "$confidence_score" } } },
-  { $match: { avg_confidence: { $lt: 0.6 } } },
-  { $sort: { avg_confidence: 1 } },
-  { $limit: 5 }
-])
+    Frontend -->|"REST / JSON"| F
+    F --> Agents
+    Agents --> Gemini
+    Agents --> DB
+    M --> T
 ```
 
 ---
 
 ## Features
 
-| Feature | Description |
+### Core study loop
+| Feature | What it does |
 |---|---|
-| **3 Teaching Modes** | Explain (analogy + example), Lesson (step-by-step), Socratic (guided discovery) |
-| **SM-2 Spaced Repetition** | Industry-standard algorithm schedules each card individually |
-| **Answer Caching** | Evaluations stored in MongoDB — same answer = instant response, no Gemini call |
-| **Weak Area Detector** | MongoDB aggregation finds concepts below 60% confidence, Gemini writes remediation |
-| **Knowledge Graph** | Interactive canvas visualising concept relationships and mastery |
-| **AI Exam Generator** | Timed exam with MCQ + short answer, auto-scored |
-| **Study Plan Generator** | Week-by-week learning roadmap from any topic |
-| **Session Tracking** | Every quiz session recorded → real streak computation |
-| **Cross-device Sync** | Auth via MongoDB — same data on any device |
-| **API Key Rotation** | Up to 50 Gemini keys rotate automatically on quota limit |
+| **Topic ingestion** | Type any topic → Gemini breaks it into 5–8 concepts with 3 flashcards each (recall, fill-in-the-blank, MCQ) |
+| **Three teaching modes** | Explain (friend who knows everything), Lesson (step-by-step), Socratic (guided discovery) |
+| **SM-2 spaced repetition** | Every answer updates ease factor, interval, and next review date using the SM-2 algorithm |
+| **Adaptive quiz** | Cards surface based on due date; eval cache avoids redundant Gemini calls on repeated answers |
+| **Session tracking** | Quiz sessions recorded and reflected in streak, heatmap, and forecast |
+
+### Intelligence Hub
+| Feature | What it does |
+|---|---|
+| **Knowledge Graph** | Canvas-rendered hub-and-spoke graph of real concepts per topic, coloured by mastery % |
+| **AI Exam Generator** | Gemini produces topic-specific MCQ + short-answer exams; short answers are AI-graded with per-question feedback |
+| **Weak Area Detector** | Surfaces concepts with confidence < 60%, fetches a Gemini remediation plan, links to a practice exam |
+| **Study DNA** | Skill profiling per topic (0–3 scale), weighted by card difficulty |
+
+### Study Plan Generator
+| Feature | What it does |
+|---|---|
+| **AI-generated plans** | Gemini writes a week-by-week plan with specific daily activities, not generic templates |
+| **Accordion UI** | 7-day-per-week cards collapsed by default — scan the topic, click to expand detail |
+| **Dashboard ingestion** | "Start This Plan" sends the topic to the Ingestor agent and adds it to your dashboard |
+
+### Notes & RAG
+| Feature | What it does |
+|---|---|
+| **Notes Library** | Upload notes per topic — they're chunked, embedded, and stored in Atlas Vector Search |
+| **Semantic search** | Search your own notes; results show match %, source, and keyword-highlighted snippets |
+| **RAG-first teaching** | `/teach` checks for uploaded notes first; uses them as the primary source before falling back to Gemini's general knowledge |
+
+### Dashboard analytics
+| Feature | What it does |
+|---|---|
+| **90-day activity heatmap** | Real `quiz_sessions` aggregated per day — no synthetic data |
+| **Review forecast** | SM-2 `next_review_at` dates aggregated into a 7/14/30-day bar chart — shows when your workload peaks |
+| **AI recommendations** | Gemini writes a personalised study nudge based on your real mastery and due-card counts |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Cost |
+**Backend**
+- Python 3.11 · Flask 3.0 · Flask-CORS
+- MongoDB Atlas (PyMongo 4.7) — 8 collections: `topics`, `concepts`, `flashcards`, `quiz_sessions`, `note_chunks`, `eval_cache`, `sessions`, `users`
+- Atlas Vector Search — 768-dimension embeddings via `text-embedding-004`
+- Gemini 2.5 Flash (`google-genai` SDK) — 50-key rotation with automatic failover on rate limits
+- SHA-256 salted password hashing · 30-day session tokens
+
+**Frontend**
+- Vanilla HTML/CSS/JS — no framework, no build step
+- Instrument Serif + Plus Jakarta Sans
+- Canvas-based Knowledge Graph (requestAnimationFrame rendering loop)
+- GitHub Pages (static hosting)
+
+---
+
+## Project Structure
+
+```
+studymind-agent/              ← Replit backend
+├── main.py                   ← Flask app — 26 routes
+├── db.py                     ← MongoDB Atlas MCP helpers (find/insert/update/aggregate/delete)
+├── requirements.txt
+└── agents/
+    ├── _gemini_client.py     ← Shared google-genai SDK wrapper (50-key rotation)
+    ├── ingestor.py           ← Topic → concepts + flashcards (Gemini JSON generation)
+    ├── teacher.py            ← Three teaching modes
+    ├── tutor.py              ← SM-2 algorithm · answer evaluation · eval caching
+    ├── progress.py           ← Mastery aggregation · heatmap · review forecast
+    ├── exam.py               ← Exam generation + AI grading
+    ├── studyplan.py          ← Week-by-week plan generation
+    ├── rag.py                ← Chunking · embedding · Atlas Vector Search
+    ├── adaptive.py           ← Skill profiling (0–3 scale per topic)
+    ├── auth.py               ← Registration · login · session management
+    └── session_tracker.py    ← Quiz session recording · streak computation
+
+studymind-agent-main/         ← GitHub Pages frontend
+└── docs/
+    ├── index.html            ← Login / Register
+    ├── dashboard.html        ← Main workspace (chat, progress, heatmap, forecast)
+    ├── topic.html            ← Topic detail (flashcards, notes library)
+    ├── intelligence.html     ← Intelligence Hub (4 tabs)
+    └── studyplan.html        ← AI Study Plan Generator
+```
+
+---
+
+## API Reference
+
+| Method | Endpoint | Description |
 |---|---|---|
-| AI | Gemini 2.5 Flash (Google AI Studio) | Free |
-| Database + MCP | MongoDB Atlas M0 | Free |
-| Backend | Python + Flask (Replit) | Free |
-| Frontend | HTML/CSS/JS (GitHub Pages) | Free |
-
-**Total cost: $0**
-
----
-
-## Collections
-
-```
-studymind/
-├── users           — registered accounts (hashed passwords)
-├── sessions        — auth session tokens
-├── topics          — ingested study topics
-├── concepts        — concept breakdown per topic
-├── flashcards      — SM-2 cards with confidence scores
-├── quiz_sessions   — completed sessions for streak tracking
-└── eval_cache      — cached Gemini evaluations (speed + cost)
-```
+| `POST` | `/auth/register` | Create account |
+| `POST` | `/auth/login` | Login → session token |
+| `POST` | `/ingest` | Ingest a new topic |
+| `POST` | `/teach` | Teach a concept (explain/lesson/socratic) |
+| `POST` | `/chat` | Orchestrated chat (routes to learn/quiz/progress intents) |
+| `POST` | `/quiz/next` | Get next due flashcard |
+| `POST` | `/quiz/answer` | Submit answer → SM-2 update |
+| `GET` | `/progress` | Mastery, streak, weak areas, AI recommendation |
+| `GET` | `/activity/heatmap` | 90-day study activity (real session data) |
+| `GET` | `/review/forecast` | SM-2 cards-due forecast (7/14/30 days) |
+| `POST` | `/topic/graph` | Per-topic concept nodes + mastery for Knowledge Graph |
+| `GET` | `/skill/profile` | Study DNA — skill score per topic |
+| `POST` | `/exam/generate` | Gemini-generated exam (MCQ + short answer) |
+| `POST` | `/exam/grade` | AI grading with per-question feedback |
+| `POST` | `/studyplan/generate` | AI study plan (week-by-week, topic-specific) |
+| `POST` | `/notes/upload` | Chunk + embed notes → Atlas Vector Search |
+| `POST` | `/notes/search` | Semantic search over user notes |
+| `GET` | `/notes/list` | List uploaded note sources |
+| `POST` | `/notes/delete` | Delete a note source |
 
 ---
 
-## Setup
+## SM-2 Algorithm
 
+Each flashcard stores: `ease_factor` (default 2.5), `interval` (days until next review), `confidence_score` (0–1), `times_seen`, and `next_review_at`.
+
+After every answer:
+1. Gemini evaluates the response and returns a `quality` score (0–5)
+2. SM-2 updates `ease_factor` and `interval` based on quality
+3. `next_review_at` is set to `now + interval days`
+4. Cards with quality < 3 reset to a 1-day interval
+
+An `eval_cache` collection stores past evaluations keyed by `(card_id, answer_hash)` — repeated identical answers skip the Gemini call entirely and return the cached score.
+
+---
+
+## Running Locally
+
+**Backend**
 ```bash
 git clone https://github.com/anshumanbahekar/studymind-agent
 cd studymind-agent
 pip install -r requirements.txt
-```
 
-Add to Replit Secrets:
-```
-GEMINI_API_KEY = your_key
-MONGODB_URI    = mongodb+srv://...
-```
+# Set environment variables
+export MONGODB_URI="your_atlas_connection_string"
+export GEMINI_KEY_1="your_gemini_api_key"   # add up to GEMINI_KEY_50
 
-```bash
 python main.py
 ```
 
----
+**Frontend**
+```bash
+git clone https://github.com/anshumanbahekar/studymind-agent-main
+cd studymind-agent-main/docs
+# Open index.html in a browser, or serve with:
+python -m http.server 8080
+```
 
-## API
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Health check |
-| `POST` | `/auth/register` | Create account |
-| `POST` | `/auth/login` | Sign in |
-| `POST` | `/teach` | Teach a concept (3 modes) |
-| `POST` | `/ingest` | Generate + store flashcards |
-| `POST` | `/quiz/next` | Fetch next due card |
-| `POST` | `/quiz/answer` | Evaluate + SM-2 update |
-| `GET` | `/progress` | Mastery, weak areas, streak |
-| `POST` | `/topic/cards` | All cards for a topic |
-| `POST` | `/session/record` | Record quiz session |
-| `POST` | `/chat` | Natural language orchestrator |
+Update the `API` constant in each HTML file to point to your local Flask server (`http://localhost:5000`).
 
 ---
 
-## Hackathon Track
+## MongoDB Collections
 
-**Partner:** MongoDB — track integration via Atlas MCP across all 4 agents  
-**Challenge:** Education / Personal productivity  
-**Built with:** Gemini 2.5 Flash · MongoDB Atlas · Flask · GitHub Pages
+| Collection | Purpose |
+|---|---|
+| `users` | Account credentials (salted SHA-256) + session tokens |
+| `topics` | Top-level topics per user |
+| `concepts` | Ordered concept list per topic (foundational → advanced) |
+| `flashcards` | Cards with SM-2 state (`ease_factor`, `interval`, `next_review_at`, `confidence_score`) |
+| `quiz_sessions` | Completed sessions (cards attempted/correct, topic ids, timestamps) |
+| `note_chunks` | Chunked user notes with 768-dim embeddings for vector search |
+| `eval_cache` | Gemini answer evaluations cached by `(card_id, answer_hash)` |
+| `sessions` | Auth sessions (token, user_id, expiry) |
 
 ---
 
-## License
+## Built by
 
-Apache 2.0 — see [LICENSE](LICENSE)
+**Anshuman Bahekar** — [github.com/anshumanbahekar](https://github.com/anshumanbahekar)
+
+Built for the MongoDB Atlas Hackathon · June 2026
