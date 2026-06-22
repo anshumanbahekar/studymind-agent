@@ -12,7 +12,7 @@
 [![Gemini](https://img.shields.io/badge/Powered%20by-Gemini%202.5-4285F4?style=flat-square&logo=google)](https://aistudio.google.com)
 [![Python](https://img.shields.io/badge/Backend-Python%20Flask-3776AB?style=flat-square&logo=python)](https://flask.palletsprojects.com)
 
-[**Live App**](https://anshumanbahekar.github.io/studymind-agent) · [**Demo Video**](#) · [**Architecture**](#architecture)
+[**Live App**](https://anshumanbahekar.github.io/studymind-agent) · [**Demo Video**](https://www.youtube.com/watch?v=BAF5gNougII) · [**Architecture**](#architecture)
 
 </div>
 
