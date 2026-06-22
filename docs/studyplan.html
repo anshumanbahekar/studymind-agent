@@ -137,8 +137,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .plan-desc{font-size:13.5px;color:var(--text3);line-height:1.6;margin-bottom:16px}
 .plan-stats{display:flex;gap:20px;flex-wrap:wrap}
 .plan-stat{
-  display:flex;align-items:center;gap:6px;
-  font-size:12.5px;font-weight:500;color:var(--p600);
+  display:flex;align-items:center;gap:8px;
+  font-size:13.5px;font-weight:600;color:var(--p600);
 }
 .plan-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 .action-btn{
@@ -152,7 +152,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .action-btn.secondary:hover{background:var(--p50)}
 
 /* Week cards */
-.weeks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:20px}
+.weeks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:20px}
 .week-card{
   background:#fff;border:1px solid var(--border);
   border-radius:16px;overflow:hidden;
@@ -162,7 +162,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 .week-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .week-header{
-  padding:16px 20px;
+  padding:18px 20px;
   background:linear-gradient(135deg,var(--p50),rgba(255,255,255,0.9));
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
@@ -171,29 +171,55 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   font-size:11px;font-weight:700;color:var(--p600);
   text-transform:uppercase;letter-spacing:0.8px;
 }
-.week-title{font-size:14px;font-weight:600;color:var(--text);margin-top:2px}
+.week-title{font-size:15px;font-weight:600;color:var(--text);margin-top:3px;line-height:1.3}
 .week-badge{
   font-size:10px;font-weight:600;padding:3px 9px;
   border-radius:20px;background:var(--p50);color:var(--p600);
-  border:1px solid var(--border);
+  border:1px solid var(--border);flex-shrink:0;margin-left:10px;
 }
-.week-body{padding:16px 20px}
+.week-body{padding:6px 10px}
 .day-item{
-  display:flex;gap:12px;padding:8px 0;
   border-bottom:1px solid rgba(139,92,246,0.06);
 }
 .day-item:last-child{border-bottom:none}
+.day-row{
+  display:flex;align-items:center;gap:12px;padding:12px 10px;
+  cursor:pointer;border-radius:10px;transition:background 0.15s;
+}
+.day-row:hover{background:var(--p50)}
+.day-item.open .day-row{background:var(--p50)}
 .day-label{
-  font-size:11px;font-weight:700;color:var(--p400);
-  min-width:30px;padding-top:1px;
+  font-size:10.5px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--p400),var(--p600));
+  min-width:38px;text-align:center;padding:5px 0;border-radius:8px;
+  flex-shrink:0;letter-spacing:0.3px;
 }
-.day-content{flex:1}
-.day-topic{font-size:13px;font-weight:500;color:var(--text)}
-.day-detail{font-size:11.5px;color:var(--text4);margin-top:2px}
-.day-time{
-  font-size:11px;font-weight:600;color:var(--green);
-  display:flex;align-items:center;gap:3px;flex-shrink:0;
+.day-item.today .day-label{background:linear-gradient(135deg,var(--amber),#b45309)}
+.day-row-main{flex:1;min-width:0}
+.day-topic{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.day-time-chip{
+  font-size:10.5px;font-weight:600;color:var(--green);
+  display:flex;align-items:center;gap:4px;flex-shrink:0;
+  background:var(--green-bg, #ecfdf5);padding:4px 8px;border-radius:8px;
 }
+.day-time-chip img{width:13px;height:13px;object-fit:contain}
+.day-chevron{
+  width:18px;height:18px;flex-shrink:0;color:var(--text4);
+  transition:transform 0.2s;display:flex;align-items:center;justify-content:center;
+}
+.day-item.open .day-chevron{transform:rotate(180deg);color:var(--p600)}
+.day-detail-wrap{
+  max-height:0;overflow:hidden;transition:max-height 0.25s ease;
+}
+.day-item.open .day-detail-wrap{max-height:120px}
+.day-detail{
+  font-size:12px;color:var(--text3);line-height:1.6;
+  padding:0 10px 14px 60px;
+}
+.week-progress-track{height:4px;background:var(--p100);border-radius:4px;margin:14px 10px 8px;overflow:hidden}
+.week-progress-fill{height:100%;background:linear-gradient(90deg,var(--p400),var(--p600));border-radius:4px;width:0%;transition:width 0.3s}
+.week-progress-label{font-size:10.5px;color:var(--text4);padding:0 10px 14px;text-align:right}
 
 /* Progress tracker */
 .progress-track-card{
@@ -642,6 +668,12 @@ function generateFallbackPlan(topic, level, time, weeks, goal) {
 // ─────────────────────────────────────────
 //  RENDER PLAN
 // ─────────────────────────────────────────
+function toggleDay(uid){
+  const el = document.getElementById(uid);
+  if(!el) return;
+  el.classList.toggle("open");
+}
+
 function escHtml(t){return String(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 function renderPlan(plan) {
@@ -655,30 +687,44 @@ function renderPlan(plan) {
   document.getElementById("out-stats").innerHTML = plan.stats.map(s => {
     const img = STAT_ICON_MAP[s.icon];
     const iconHtml = img
-      ? `<img src="${img}" style="width:20px;height:20px;object-fit:contain">`
+      ? `<img src="${img}" style="width:28px;height:28px;object-fit:contain">`
       : `<i class="ti ${s.icon}"></i>`;
     return `<div class="plan-stat">${iconHtml} ${escHtml(s.label)}</div>`;
   }).join("");
 
+  const todayIdx = new Date().getDay(); // 0=Sun..6=Sat
+  const dayNameToIdx = {Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+
   document.getElementById("weeks-grid").innerHTML = plan.weeks.slice(0, 12).map((w, i) =>
     `<div class="week-card" style="animation-delay:${i*0.06}s">
       <div class="week-header">
-        <div>
+        <div style="min-width:0">
           <div class="week-num">Week ${w.week}</div>
           <div class="week-title">${escHtml(w.title)}</div>
         </div>
         <span class="week-badge">${w.days.length} days</span>
       </div>
       <div class="week-body">
-        ${w.days.map(d => `
-          <div class="day-item">
-            <div class="day-label">${escHtml(d.day)}</div>
-            <div class="day-content">
-              <div class="day-topic">${escHtml(d.topic)}</div>
+        ${w.days.map((d,di) => {
+          const isToday = i === 0 && dayNameToIdx[d.day] === todayIdx;
+          const uid = `w${w.week}d${di}`;
+          return `
+          <div class="day-item${isToday ? " today" : ""}" id="${uid}">
+            <div class="day-row" onclick="toggleDay('${uid}')">
+              <div class="day-label">${escHtml(d.day)}</div>
+              <div class="day-row-main">
+                <div class="day-topic">${escHtml(d.topic)}</div>
+              </div>
+              <div class="day-time-chip"><img src="https://cdn-icons-png.flaticon.com/128/896/896354.png" alt="">${escHtml(d.time)}</div>
+              <div class="day-chevron">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+            <div class="day-detail-wrap">
               <div class="day-detail">${escHtml(d.detail)}</div>
             </div>
-            <div class="day-time"><img src="https://cdn-icons-png.flaticon.com/128/896/896354.png" style="width:16px;height:16px;object-fit:contain">${escHtml(d.time)}</div>
-          </div>`).join("")}
+          </div>`;
+        }).join("")}
       </div>
     </div>`
   ).join("");
